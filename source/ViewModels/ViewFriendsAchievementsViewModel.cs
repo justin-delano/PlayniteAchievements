@@ -633,7 +633,7 @@ namespace PlayniteAchievements.ViewModels
                 : Enumerable.Empty<FriendAchievementDisplayItem>());
             Achievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(filtered, maxRows));
             StatusText = _allAchievements.Count == 0
-                ? L("LOCPlayAch_ViewFriendsAchievements_NoData")
+                ? L("LOCPlayAch_FriendsOverview_NoData")
                 : string.Empty;
             OnPropertyChanged(nameof(AchievementSectionTitle));
             OnPropertyChanged(nameof(AchievementCountText));

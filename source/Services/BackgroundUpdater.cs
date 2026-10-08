@@ -69,7 +69,7 @@ namespace PlayniteAchievements.Services
                 }
                 catch (Exception ex)
                 {
-                    var msg = ResourceProvider.GetString("LOCPlayAch_Error_Periodic_InitialCheckFailed");
+                    var msg = ResourceProvider.GetString("LOCPlayAch_Error_Periodic_UpdateFailed");
                     _logger.Error(ex, msg);
                 }
 

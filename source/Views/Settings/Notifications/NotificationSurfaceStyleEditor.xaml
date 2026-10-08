@@ -87,7 +87,7 @@
                 <UniformGrid Columns="2">
                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
                               IsChecked="{Binding Surface.ShowHeader}"/>
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Column_AchievementName}"
                               IsChecked="{Binding Surface.ShowName}"/>
                     <CheckBox Content="{DynamicResource LOCGameDescriptionTitle}"
                               IsChecked="{Binding Surface.ShowDescription}"/>
@@ -305,7 +305,7 @@
                               Margin="0,0,0,8"/>
 
                     <TextBlock Grid.Row="1" Grid.Column="0"
-                               Text="{DynamicResource LOCPlayAch_Settings_Style_Rarity_PercentLabel}"
+                               Text="{DynamicResource LOCPlayAch_Column_RarityPercent}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
                     <ComboBox Grid.Row="1" Grid.Column="1"
@@ -430,7 +430,7 @@
                              Margin="0,0,0,8"/>
 
                     <TextBlock Grid.Row="2" Grid.Column="0"
-                               Text="{DynamicResource LOCPlayAch_Settings_Style_Rarity_PercentLabel}"
+                               Text="{DynamicResource LOCPlayAch_Column_RarityPercent}"
                                Style="{StaticResource EditorRowLabelStyle}"
                                Margin="0,0,8,8"/>
                     <Slider Grid.Row="2" Grid.Column="1"
@@ -1252,7 +1252,7 @@
 
                     <!-- Progress notifications are toast-only (never screenshotted). -->
                     <TextBlock Grid.Row="4" Grid.Column="0"
-                               Text="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"
+                               Text="{DynamicResource LOCPlayAch_Toast_AchievementProgress}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                VerticalAlignment="Center"
                                Margin="0,0,12,0"

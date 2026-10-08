@@ -1948,7 +1948,7 @@ namespace PlayniteAchievements.ViewModels.Settings
                 case NotificationSurfaceStyle.LineHeader:
                     return L("LOCPlayAch_Settings_ToastShowHeader");
                 case NotificationSurfaceStyle.LineTitle:
-                    return L("LOCPlayAch_Settings_ToastShowName");
+                    return L("LOCPlayAch_Column_AchievementName");
                 case NotificationSurfaceStyle.LineDescription:
                     return L("LOCGameDescriptionTitle");
                 case NotificationSurfaceStyle.LineGameCategory:

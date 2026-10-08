@@ -249,7 +249,7 @@ namespace PlayniteAchievements.Views.Settings.General
 
             _capturingHotkey = target;
             HotkeyCaptureStatusText = L("LOCPlayAch_Hotkeys_CapturePrompt");
-            SetHotkeyButtonText(target, L("LOCPlayAch_Hotkeys_CaptureButton"));
+            SetHotkeyButtonText(target, L("LOCPlayAch_Hotkeys_CapturePrompt"));
 
             button?.Focus();
             Keyboard.Focus(button);

@@ -85,8 +85,8 @@
 
             <Button Content="&#xEE00;"
                     Style="{StaticResource PickerIconButtonStyle}"
-                    ToolTip="{DynamicResource LOCPlayAch_Presets_Save}"
-                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Presets_Save}"
+                    ToolTip="{DynamicResource LOCPlayAch_Presets_NameDialogTitle}"
+                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Presets_NameDialogTitle}"
                     VerticalAlignment="Center"
                     Click="Save_Click"/>
 

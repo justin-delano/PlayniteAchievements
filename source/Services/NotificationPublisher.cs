@@ -68,7 +68,7 @@ namespace PlayniteAchievements.Services
                 ResourceProvider.GetString("LOCPlayAch_ThemeMigration_AutoMigratedMessage"),
                 displayName);
 
-            var restart = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_AutoMigratedRestart");
+            var restart = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_RestartRequired");
 
             var text = $"{message}\n{restart}";
 

@@ -105,8 +105,8 @@
                                 <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                                 <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
                                 <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
-                                <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
-                                <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
+                                <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderFriendUnlock}"/>
+                                <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Toast_AchievementProgress}"/>
                             </ComboBox>
                             <ComboBox x:Name="FrameSampleSelector"
                                       SelectedValuePath="Tag"
