@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Views.Settings.Themes
                     viewFactory: () => new ViewItemThemePage(_previewState)),
                 new SettingsNavigationItem(
                     "PieChart",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_PieChartPreview"),
+                    ResourceProvider.GetString("LOCPlayAch_Showcase_Widget_Pie"),
                     groupName: themeControlsGroup,
                     iconGlyph: "\uE983",
                     viewFactory: () => new PieChartThemePage(_previewState)),

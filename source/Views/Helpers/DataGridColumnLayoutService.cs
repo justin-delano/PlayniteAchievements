@@ -2282,9 +2282,9 @@ namespace PlayniteAchievements.Views.Helpers
                 TextAlignment = TextAlignment.Center,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 AcceptsReturn = false,
-                ToolTip = ResourceProvider.GetString("LOCPlayAch_Settings_Style_CardWidth")
+                ToolTip = ResourceProvider.GetString("LOCWidth")
             };
-            AutomationProperties.SetName(editor, ResourceProvider.GetString("LOCPlayAch_Settings_Style_CardWidth"));
+            AutomationProperties.SetName(editor, ResourceProvider.GetString("LOCWidth"));
             editor.Text = FormatWidthLabel(contextColumn);
 
             var editHandled = new object();

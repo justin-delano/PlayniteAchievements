@@ -190,10 +190,10 @@ namespace PlayniteAchievements.ViewModels.Workshop
             switch (kind)
             {
                 case WorkshopItemKind.Colors: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Colors");
-                case WorkshopItemKind.NotificationStyle: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_NotificationStyle");
+                case WorkshopItemKind.NotificationStyle: return ResourceProvider.GetString("LOCNotifications");
                 case WorkshopItemKind.ScreenshotFrame: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ScreenshotFrame");
                 case WorkshopItemKind.ShowcasePage: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_ShowcasePage");
-                case WorkshopItemKind.UnlockSounds: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_UnlockSounds");
+                case WorkshopItemKind.UnlockSounds: return ResourceProvider.GetString("LOCPlayAch_Workshop_Share_Sounds");
                 case WorkshopItemKind.Bundle: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_Bundle");
                 default: return ResourceProvider.GetString("LOCPlayAch_Workshop_Kind_GameCustomData");
             }

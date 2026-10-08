@@ -567,7 +567,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 () => DuplicateCategoriesFromContext(actionLabels)));
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_Button_Delete"),
+                L("LOCPlayAch_Common_Delete"),
                 () => DeleteCategoriesFromContext(actionLabels)));
 
             return menu;
@@ -951,7 +951,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             var rows = ResolveActionRows(contextItem);
             var typesMenu = new MenuItem
             {
-                Header = L("LOCPlayAch_Common_Label_Type")
+                Header = L("LOCTypeLabel")
             };
             foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
@@ -974,7 +974,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 () => SetLabelFromContext(contextItem)));
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_Button_Clear"),
+                L("LOCClearLabel"),
                 () => ClearRowsFromContext(contextItem)));
 
             return menu;
@@ -1157,7 +1157,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 ViewModel.HasCustomCategoryOrder || ViewModel.HasCustomCategoryNesting,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryOrder)));
             menu.Items.Add(CreateResetMenuItem(
-                L("LOCPlayAch_Column_Name"),
+                L("LOCNameLabel"),
                 ViewModel.HasCustomCategoryNames,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryNames)));
             menu.Items.Add(CreateResetMenuItem(

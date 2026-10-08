@@ -125,7 +125,7 @@ namespace PlayniteAchievements.Views.Showcase
             _fullscreen = CreateGlyphButton(
                 FullscreenGlyph,
                 "PlayAch.Capture.GlyphButtonStyle",
-                "LOCPlayAch_Captures_Fullscreen",
+                "LOCPlayAch_Common_Fullscreen",
                 OpenFullscreen);
 
             _transport = BuildTransport();

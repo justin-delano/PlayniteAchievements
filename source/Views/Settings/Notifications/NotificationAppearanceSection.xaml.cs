@@ -224,11 +224,11 @@ namespace PlayniteAchievements.Views.Settings.Notifications
                 case NotificationKind.Capstone:
                     return L("LOCPlayAch_Settings_ToastPreviewCapstone");
                 case NotificationKind.Completion:
-                    return L("LOCPlayAch_Settings_ToastPreviewComplete");
+                    return L("LOCPlayAch_Settings_Style_HeaderCongratulations");
                 case NotificationKind.Friend:
-                    return L("LOCPlayAch_Settings_ToastPreviewFriend");
+                    return L("LOCPlayAch_Settings_Style_HeaderFriendUnlock");
                 case NotificationKind.Progress:
-                    return L("LOCPlayAch_Settings_Style_HeaderProgress");
+                    return L("LOCPlayAch_Toast_AchievementProgress");
                 case NotificationKind.Common:
                     return L("LOCPlayAch_Rarity_Common");
                 case NotificationKind.Uncommon:
@@ -2351,7 +2351,7 @@ namespace PlayniteAchievements.Views.Settings.Notifications
         {
             return new NotificationStylePlatformOption
             {
-                DisplayName = ResourceProvider.GetString("LOCPlayAch_Common_Default")
+                DisplayName = ResourceProvider.GetString("LOCDefault")
             };
         }
 

@@ -24,8 +24,7 @@ namespace PlayniteAchievements.Providers.Xenia
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia",
             raw => XeniaTitleIdHelper.TryNormalize(raw, out var titleId)
                 ? ProviderOverrideValidation.Valid(titleId)
-                : ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_XeniaTitleId_InvalidId"));
+                : ProviderOverrideValidation.InvalidId("4D5307E6"));
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;

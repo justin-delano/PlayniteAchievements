@@ -845,11 +845,11 @@ namespace PlayniteAchievements.ViewModels
             SelectedRefreshMode,
             RefreshModeType.Custom.GetKey(),
             StringComparison.Ordinal)
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
+            ? ResourceProvider.GetString("LOCConfigure")
             : ResourceProvider.GetString("LOCPlayAch_Button_Refresh");
 
         public string RefreshOrCancelButtonText => IsRefreshing
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
+            ? ResourceProvider.GetString("LOCCancelLabel")
             : RefreshActionButtonText;
 
         public string RefreshOrCancelButtonGlyph => IsRefreshing
@@ -3673,7 +3673,7 @@ namespace PlayniteAchievements.ViewModels
         {
             return OverviewGameSummaryFilters.BuildProviderFilterText(
                 ProviderFilterGroups,
-                L("LOCPlayAch_Common_Label_Platform"));
+                L("LOCPlatformTitle"));
         }
 
         private void ApplyRightFilters(bool skipDefaultSort = false)

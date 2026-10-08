@@ -390,7 +390,7 @@ namespace PlayniteAchievements.Views.Helpers
                 L(
                     resourceOwner,
                     newCollection
-                        ? "LOCPlayAch_Showcase_NewCollectionPrompt"
+                        ? "LOCPlayAch_Showcase_RenameCollectionPrompt"
                         : "LOCPlayAch_Showcase_RenameCollectionPrompt"),
                 L(
                     resourceOwner,

@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Views.Showcase
                         ProfileMedalModeName);
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_ProfileLayout"),
+                        Localize("LOCSettingsLayoutLabel"),
                         new[]
                         {
                             ShowcaseProfileLayout.Left,
@@ -109,7 +109,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.Scores:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Common_Label_Type"),
+                        Localize("LOCTypeLabel"),
                         new[]
                         {
                             ScoreCardType.Collection,
@@ -216,7 +216,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseWidgetKind.NativePoints:
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_GroupBy"),
+                        Localize("LOCMenuGroupByTitle"),
                         new[] { ShowcasePointsGrouping.Provider, ShowcasePointsGrouping.Game },
                         ShowcaseWidgetOptions.GetPointsGrouping(_settings),
                         value => ShowcaseWidgetOptions.SetPointsGrouping(_settings, value),
@@ -269,7 +269,7 @@ namespace PlayniteAchievements.Views.Showcase
                     var achievementSortRows = new List<FrameworkElement>();
                     AddChoice(
                         achievementMosaicPanel,
-                        Localize("LOCPlayAch_Showcase_Source"),
+                        Localize("LOCSourceLabel"),
                         new[]
                         {
                             ShowcaseMosaicSource.Recent,
@@ -315,7 +315,7 @@ namespace PlayniteAchievements.Views.Showcase
                         value => ShowcaseWidgetOptions.SetMosaicShowRarityBar(_settings, value));
                     achievementSortRows.Add(AddChoice(
                         achievementMosaicPanel,
-                        Localize("LOCPlayAch_Settings_SortBy"),
+                        Localize("LOCMenuSortByTitle"),
                         new[]
                         {
                             CompactListSortMode.None,
@@ -335,7 +335,7 @@ namespace PlayniteAchievements.Views.Showcase
                     FrameworkElement finishNextOptions = null;
                     AddChoice(
                         gameMosaicPanel,
-                        Localize("LOCPlayAch_Showcase_Source"),
+                        Localize("LOCSourceLabel"),
                         new[]
                         {
                             ShowcaseGameMosaicSource.Completed,
@@ -397,7 +397,7 @@ namespace PlayniteAchievements.Views.Showcase
                         value => ShowcaseWidgetOptions.SetMosaicShowRarityBar(_settings, value));
                     AddChoice(
                         gameMosaicPanel,
-                        Localize("LOCPlayAch_Settings_SortBy"),
+                        Localize("LOCMenuSortByTitle"),
                         new[]
                         {
                             GameSummariesSortMode.PinOrder,
@@ -423,12 +423,12 @@ namespace PlayniteAchievements.Views.Showcase
                     // commit, and the box shows the stored value.
                     AddNumberRow(
                         achievementMosaicPanel,
-                        Localize("LOCPlayAch_Settings_Style_SizeHeader") + " (px)",
+                        Localize("LOCSize") + " (px)",
                         () => ShowcaseWidgetOptions.GetMosaicIconSize(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicIconSize(_settings, value));
                     AddNumberRow(
                         gameMosaicPanel,
-                        Localize("LOCPlayAch_Settings_Style_SizeHeader") + " (px)",
+                        Localize("LOCSize") + " (px)",
                         () => ShowcaseWidgetOptions.GetMosaicCoverWidth(_settings),
                         value => ShowcaseWidgetOptions.SetMosaicCoverWidth(_settings, value));
                     AddNumberRow(
@@ -442,7 +442,7 @@ namespace PlayniteAchievements.Views.Showcase
                     FrameworkElement slideshowAchievementCollectionRow = null;
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source"),
+                        Localize("LOCSourceLabel"),
                         new[]
                         {
                             ShowcaseSlideshowSource.All,
@@ -534,7 +534,7 @@ namespace PlayniteAchievements.Views.Showcase
                     var gameGridLibraryPanel = new StackPanel();
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source"),
+                        Localize("LOCSourceLabel"),
                         new[]
                         {
                             ShowcaseGameGridSource.Library,
@@ -605,7 +605,7 @@ namespace PlayniteAchievements.Views.Showcase
                     var achievementGridUnlockNextRows = new List<FrameworkElement>();
                     AddChoice(
                         panel,
-                        Localize("LOCPlayAch_Showcase_Source"),
+                        Localize("LOCSourceLabel"),
                         new[]
                         {
                             ShowcaseAchievementGridSource.All,
@@ -750,7 +750,7 @@ namespace PlayniteAchievements.Views.Showcase
             AddLastPlayedWindowChoice(container);
             AddToggle(
                 container,
-                Localize("LOCPlayAch_Showcase_FinishNextIncludeUnplayed"),
+                Localize("LOCPlayAch_IncludeUnplayedGames"),
                 ShowcaseWidgetOptions.GetFinishNextIncludeUnplayed(_settings),
                 value => ShowcaseWidgetOptions.SetFinishNextIncludeUnplayed(_settings, value));
             AddNumberRow(
@@ -977,7 +977,7 @@ namespace PlayniteAchievements.Views.Showcase
                     combo.Items.Add(new Choice<string>
                     {
                         Value = null,
-                        Label = Localize("LOCPlayAch_Common_None")
+                        Label = Localize("LOCNone")
                     });
                     foreach (var stat in catalog)
                     {
@@ -1184,8 +1184,8 @@ namespace PlayniteAchievements.Views.Showcase
                 SortDirectionLabel);
 
         private static string SortDirectionLabel(bool descending) => descending
-            ? Localize("LOCPlayAch_Common_Descending")
-            : Localize("LOCPlayAch_Common_Ascending");
+            ? Localize("LOCMenuSortDescending")
+            : Localize("LOCMenuSortAscending");
 
         // Both mosaic sort pickers name the mode that keeps the Source's own order "Default",
         // matching how the grid options editor labels CompactListSortMode.None.
@@ -1198,7 +1198,7 @@ namespace PlayniteAchievements.Views.Showcase
                 case CompactListSortMode.Rarity:
                     return Localize("LOCPlayAch_Column_Rarity");
                 default:
-                    return Localize("LOCPlayAch_Common_Default");
+                    return Localize("LOCDefault");
             }
         }
 
@@ -1209,15 +1209,15 @@ namespace PlayniteAchievements.Views.Showcase
                 case GameSummariesSortMode.RecentUnlock:
                     return Localize("LOCPlayAch_Common_LastUnlock");
                 case GameSummariesSortMode.LastPlayed:
-                    return Localize("LOCPlayAch_Column_LastPlayed");
+                    return Localize("LOCLastPlayed");
                 case GameSummariesSortMode.TotalAchievements:
                     return Localize("LOCPlayAch_Column_Total");
                 case GameSummariesSortMode.Progress:
                     return Localize("LOCPlayAch_Progress");
                 case GameSummariesSortMode.Alphabetical:
-                    return Localize("LOCPlayAch_Column_Name");
+                    return Localize("LOCNameLabel");
                 default:
-                    return Localize("LOCPlayAch_Common_Default");
+                    return Localize("LOCDefault");
             }
         }
 
@@ -1230,19 +1230,19 @@ namespace PlayniteAchievements.Views.Showcase
                 case GameActivityScope.Unplayed:
                     return Localize("LOCPlayAch_Filter_Unplayed");
                 default:
-                    return Localize("LOCPlayAch_Common_All");
+                    return Localize("LOCAll");
             }
         }
 
         private static string PieLegendPositionName(PieLegendPosition value) =>
             Localize(value == PieLegendPosition.Left
-                ? "LOCPlayAch_Settings_GridAlignment_Left"
-                : "LOCPlayAch_Settings_GridAlignment_Right");
+                ? "LOCDockLeft"
+                : "LOCDockRight");
 
         private static string ScoreBadgePositionName(ScoreCardBadgePosition value) =>
             Localize(value == ScoreCardBadgePosition.Right
-                ? "LOCPlayAch_Settings_GridAlignment_Right"
-                : "LOCPlayAch_Settings_GridAlignment_Left");
+                ? "LOCDockRight"
+                : "LOCDockLeft");
 
         private static string PieCenterModeName(PieCenterMode value)
         {

@@ -83,7 +83,7 @@
                             <TabItem x:Name="FrameTabItem"
                                      Header="{DynamicResource LOCPlayAch_Settings_FrameHeader}"/>
                             <TabItem x:Name="SoundsTabItem"
-                                     Header="{DynamicResource LOCPlayAch_Workshop_Kind_UnlockSounds}"/>
+                                     Header="{DynamicResource LOCPlayAch_Workshop_Share_Sounds}"/>
                         </TabControl>
 
                         <WrapPanel Grid.Column="1"
@@ -104,9 +104,9 @@
                                 <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
                                 <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                                 <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
-                                <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"/>
-                                <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderProgress}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
+                                <ComboBoxItem Tag="friend" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderFriendUnlock}"/>
+                                <ComboBoxItem Tag="progress" Content="{DynamicResource LOCPlayAch_Toast_AchievementProgress}"/>
                             </ComboBox>
                             <ComboBox x:Name="FrameSampleSelector"
                                       SelectedValuePath="Tag"
@@ -119,7 +119,7 @@
                                 <ComboBoxItem Tag="rare" Content="{DynamicResource LOCPlayAch_Rarity_Rare}" IsSelected="True"/>
                                 <ComboBoxItem Tag="ultrarare" Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"/>
                                 <ComboBoxItem Tag="capstone" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewCapstone}"/>
-                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewComplete}"/>
+                                <ComboBoxItem Tag="complete" Content="{DynamicResource LOCPlayAch_Settings_Style_HeaderCongratulations}"/>
                             </ComboBox>
 
                             <!-- Platform selector: Default edits the global appearance; a platform can
@@ -343,7 +343,7 @@
                                          or add one to the library. -->
                                     <StackPanel Orientation="Horizontal">
                                         <Button Click="ImportStyle_Click"
-                                                Content="{DynamicResource LOCPlayAch_Common_Import}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                                                Content="{DynamicResource LOCImportLabel}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                                 ToolTip="{DynamicResource LOCPlayAch_Settings_Style_ShareHint}"
                                                 Margin="16,0,0,0"/>
                                         <Button Click="ExportStyle_Click"

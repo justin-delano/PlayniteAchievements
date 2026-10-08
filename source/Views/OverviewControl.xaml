@@ -378,7 +378,7 @@
                                 VerticalAlignment="Center"
                                 Margin="18,0,0,0">
                         <Button x:Name="OverviewSubViewButton"
-                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overview}"
+                                Content="{DynamicResource LOCOverviewLabel}"
                                 Click="OverviewSubViewButton_Click">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource OverviewSubViewSwitchButtonStyle}">
@@ -695,7 +695,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0"
-                                           Text="{DynamicResource LOCPlayAch_RecentAchievements}"
+                                           Text="{DynamicResource LOCPlayAch_Achievements}"
                                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                            FontWeight="Bold"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"

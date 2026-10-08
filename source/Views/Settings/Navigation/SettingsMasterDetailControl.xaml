@@ -52,7 +52,7 @@
                                  Height="24"
                                  Padding="6,2"
                                  Text="{Binding SearchText, ElementName=MasterDetailRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                                 ToolTip="{DynamicResource LOCPlayAch_Button_Search}"/>
+                                 ToolTip="{DynamicResource LOCSearchLabel}"/>
                     </Grid>
                 </Border>
 

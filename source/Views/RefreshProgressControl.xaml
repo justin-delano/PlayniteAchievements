@@ -109,7 +109,7 @@
                         Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
                         Visibility="{Binding ShowInProgressButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                <Button Content="{DynamicResource LOCCancelLabel}"
                         Command="{Binding CancelCommand}"
                         Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"

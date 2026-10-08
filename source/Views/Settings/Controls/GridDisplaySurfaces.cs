@@ -197,7 +197,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private static readonly Dictionary<string, string> AchievementTitleKeys =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                [GridOptionKeys.Achievement.OverviewRecent] = "LOCPlayAch_Settings_OverviewRecentAchievementsGrid",
+                [GridOptionKeys.Achievement.OverviewRecent] = "LOCPlayAch_Showcase_Widget_RecentAchievements",
                 [GridOptionKeys.Achievement.OverviewSelectedGame] = "LOCPlayAch_Settings_SelectedGameGridSort",
                 [GridOptionKeys.Achievement.SingleGame] = "LOCPlayAch_Settings_SelectedGameGridSort"
             };
@@ -205,7 +205,7 @@ namespace PlayniteAchievements.Views.Settings.Controls
         private static readonly Dictionary<string, string> GameSummaryTitleKeys =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                [GridOptionKeys.GameSummaries.Overview] = "LOCPlayAch_Settings_GameSummariesGridSort"
+                [GridOptionKeys.GameSummaries.Overview] = "LOCPlayAch_Showcase_Widget_GameSummaries"
             };
 
         /// <summary>

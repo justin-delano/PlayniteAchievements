@@ -473,6 +473,12 @@ namespace PlayniteAchievements.Services.Achievements
         {
             var values = ParseValues(NormalizeOrDefault(categoryType));
             var canonical = values.Count == 0 ? DefaultCategoryType : values[0];
+            // Default reuses the shared "Default" label rather than a second identical string.
+            if (string.Equals(canonical, DefaultCategoryType, StringComparison.OrdinalIgnoreCase))
+            {
+                return L("LOCDefault", canonical);
+            }
+
             return L($"LOCPlayAch_ManageAchievements_Category_Type_{canonical}", canonical);
         }
 
@@ -484,7 +490,7 @@ namespace PlayniteAchievements.Services.Achievements
         {
             var label = CategoryPathHelper.NormalizePath(rawValue);
             return string.Equals(label, DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase)
-                ? L("LOCPlayAch_Common_Default", DefaultCategoryLabel)
+                ? L("LOCDefault", DefaultCategoryLabel)
                 : CategoryPathHelper.ToDisplayPath(label);
         }
 
@@ -497,7 +503,7 @@ namespace PlayniteAchievements.Services.Achievements
         {
             var label = CategoryPathHelper.NormalizePath(rawValue);
             return string.Equals(label, DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase)
-                ? L("LOCPlayAch_Common_Default", DefaultCategoryLabel)
+                ? L("LOCDefault", DefaultCategoryLabel)
                 : CategoryPathHelper.ToDisplayLeaf(label);
         }
 

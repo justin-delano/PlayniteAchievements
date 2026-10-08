@@ -34,7 +34,7 @@
                     Grid.Column="0"
                     Content="&#xEECF;"
                     FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                    ToolTip="{DynamicResource LOCPlayAch_Button_Save}"
+                    ToolTip="{DynamicResource LOCSaveLabel}"
                     Click="CapturePageButton_Click"
                     MinWidth="36"
                     Margin="0,0,6,0"/>

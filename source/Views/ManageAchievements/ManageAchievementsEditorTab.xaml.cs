@@ -1446,7 +1446,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             // Category and type, the same two the Category tab's row menu offers.
             var categoryMenu = new MenuItem
             {
-                Header = ResourceProvider.GetString("LOCPlayAch_Common_Label_Category"),
+                Header = ResourceProvider.GetString("LOCCategoryLabel"),
                 IsEnabled = selection.All(row => row.CanEditAssignments)
             };
 
@@ -1455,7 +1455,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             var typeMenu = new MenuItem
             {
-                Header = ResourceProvider.GetString("LOCPlayAch_Common_Label_Type"),
+                Header = ResourceProvider.GetString("LOCTypeLabel"),
                 IsEnabled = selection.All(row => row.CanEditAssignments)
             };
             AppendCategoryTypeItems(typeMenu.Items, selection);
@@ -1475,7 +1475,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Editor_Revert"),
                 viewModel.RevertCommand));
             menu.Items.Add(CreateCommandMenuItem(
-                ResourceProvider.GetString("LOCPlayAch_Button_Delete"),
+                ResourceProvider.GetString("LOCPlayAch_Common_Delete"),
                 viewModel.DeleteCommand));
 
             return menu;
@@ -2011,7 +2011,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
 
             items.Add(CreateMenuItem(
-                ResourceProvider.GetString("LOCPlayAch_Button_Clear"),
+                ResourceProvider.GetString("LOCClearLabel"),
                 () => viewModel.SetCategoryForSelection(null)));
         }
 

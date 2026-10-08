@@ -3677,14 +3677,18 @@ namespace PlayniteAchievements.Views.Showcase
 
         private MenuItem PageTemplateItem(ShowcasePageTemplate template)
         {
+            // Collection reuses the score mode's "Collection" rather than a second identical string.
+            var name = template == ShowcasePageTemplate.Collection
+                ? Localize("LOCPlayAch_Showcase_ScoreMode_Collection")
+                : Localize($"LOCPlayAch_Showcase_Template_{template}");
             return MenuItem(
-                Localize($"LOCPlayAch_Showcase_Template_{template}"),
+                name,
                 () =>
                 {
                     ShowcaseLayoutService.AddPage(
                         Layout,
                         template,
-                        Localize($"LOCPlayAch_Showcase_Template_{template}"));
+                        name);
                     SaveAndRebuild();
                 });
         }

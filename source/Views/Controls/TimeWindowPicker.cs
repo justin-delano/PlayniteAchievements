@@ -604,7 +604,7 @@ namespace PlayniteAchievements.Views.Controls
         private void UpdateCustomChipText()
         {
             var window = Window ?? TimeWindow.All;
-            var customLabel = ResourceProvider.GetString("LOCPlayAch_Common_Custom");
+            var customLabel = ResourceProvider.GetString("LOCCustomLabel");
             if (window.IsCustom)
             {
                 var range = TimeWindowText.Describe(window, MinDate);

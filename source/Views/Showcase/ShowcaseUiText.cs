@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Views.Showcase
         public static string ScoreCardSlotName(ScoreCardSlot value) =>
             ScoreCardTypes.TryGetCardType(value, out var type)
                 ? ScoreCardTypeName(type)
-                : Localize("LOCPlayAch_Common_None");
+                : Localize("LOCNone");
 
         /// <summary>The score's name as card pickers show it.</summary>
         public static string ScoreCardTypeName(ScoreCardType value)
@@ -63,21 +63,27 @@ namespace PlayniteAchievements.Views.Showcase
                 case ShowcaseProfileLayout.Stacked:
                     return Localize("LOCPlayAch_Showcase_ProfileLayout_Stacked");
                 default:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Left");
+                    return Localize("LOCDockLeft");
             }
         }
 
-        // Both reuses the score cards' "Both" rather than adding a second identical string.
+        // Both reuses the shared "Both" rather than adding a second identical string.
         public static string ProfileMedalModeName(ShowcaseProfileMedalMode value) =>
             value == ShowcaseProfileMedalMode.Both
-                ? Localize("LOCPlayAch_Showcase_ScoreMode_Dual")
+                ? Localize("LOCPlayAch_Common_Both")
                 : EnumValueName("LOCPlayAch_Showcase_ProfileMedalMode_", value);
 
+        // Completed games reuses the completions stat label.
         public static string PieModeName(ShowcasePieMode value) =>
-            EnumValueName("LOCPlayAch_Showcase_PieMode_", value);
+            value == ShowcasePieMode.CompletedGames
+                ? Localize("LOCPlayAch_Showcase_Stat_CompletedGames")
+                : EnumValueName("LOCPlayAch_Showcase_PieMode_", value);
 
+        // Game reuses the "Game" column header.
         public static string PointsGroupingName(ShowcasePointsGrouping value) =>
-            EnumValueName("LOCPlayAch_Showcase_PointsGrouping_", value);
+            value == ShowcasePointsGrouping.Game
+                ? Localize("LOCPlayAch_Column_Game")
+                : EnumValueName("LOCPlayAch_Showcase_PointsGrouping_", value);
 
         public static string MosaicSourceName(ShowcaseMosaicSource value) =>
             EnumValueName("LOCPlayAch_Showcase_MosaicSource_", value);
@@ -100,14 +106,30 @@ namespace PlayniteAchievements.Views.Showcase
         public static string UnlockNextCriterionName(UnlockNextCriterion value) =>
             EnumValueName("LOCPlayAch_Showcase_UnlockNextCriterion_", value);
 
-        public static string ScreenshotVariantName(ShowcaseScreenshotVariant value) =>
-            EnumValueName("LOCPlayAch_Showcase_ScreenshotVariant_", value);
+        // The variants share the capture settings' labels.
+        public static string ScreenshotVariantName(ShowcaseScreenshotVariant value)
+        {
+            switch (value)
+            {
+                case ShowcaseScreenshotVariant.Clean:
+                    return Localize("LOCPlayAch_Settings_ScreenshotVariantClean");
+                case ShowcaseScreenshotVariant.Notification:
+                    return Localize("LOCPlayAch_Settings_Style_ToastTab");
+                case ShowcaseScreenshotVariant.Framed:
+                    return Localize("LOCPlayAch_Settings_ScreenshotVariantFramed");
+                default:
+                    return Localize("LOCAll");
+            }
+        }
 
         public static string SlideshowSourceName(ShowcaseSlideshowSource value) =>
             EnumValueName("LOCPlayAch_Showcase_SlideshowSource_", value);
 
+        // The content kinds share the overview's Achievements and Games labels.
         public static string MosaicContentName(ShowcaseMosaicContent value) =>
-            EnumValueName("LOCPlayAch_Showcase_MosaicContent_", value);
+            value == ShowcaseMosaicContent.Games
+                ? Localize("LOCPlayAch_Overview_GameSummaries")
+                : Localize("LOCPlayAch_Achievements");
 
         // The grid sources shared with a mosaic reuse the mosaic's label rather than adding a
         // second identical string to translate.
@@ -116,10 +138,20 @@ namespace PlayniteAchievements.Views.Showcase
                 ? MosaicSourceName(ShowcaseMosaicSource.UnlockNext)
                 : EnumValueName("LOCPlayAch_Showcase_AchievementGridSource_", value);
 
-        public static string GameGridSourceName(ShowcaseGameGridSource value) =>
-            value == ShowcaseGameGridSource.FinishNext
-                ? GameMosaicSourceName(ShowcaseGameMosaicSource.FinishNext)
-                : EnumValueName("LOCPlayAch_Showcase_GameGridSource_", value);
+        public static string GameGridSourceName(ShowcaseGameGridSource value)
+        {
+            switch (value)
+            {
+                case ShowcaseGameGridSource.Pinned:
+                    return AchievementGridSourceName(ShowcaseAchievementGridSource.Pinned);
+                case ShowcaseGameGridSource.PlayniteFavorites:
+                    return GameMosaicSourceName(ShowcaseGameMosaicSource.PlayniteFavorites);
+                case ShowcaseGameGridSource.FinishNext:
+                    return GameMosaicSourceName(ShowcaseGameMosaicSource.FinishNext);
+                default:
+                    return GameMosaicSourceName(ShowcaseGameMosaicSource.All);
+            }
+        }
 
         public static string GameMosaicSourceName(ShowcaseGameMosaicSource value) =>
             EnumValueName("LOCPlayAch_Showcase_GameMosaicSource_", value);
@@ -134,11 +166,11 @@ namespace PlayniteAchievements.Views.Showcase
             switch (value)
             {
                 case ShowcaseInfoPanelPosition.Left:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Left");
+                    return Localize("LOCDockLeft");
                 case ShowcaseInfoPanelPosition.Right:
-                    return Localize("LOCPlayAch_Settings_GridAlignment_Right");
+                    return Localize("LOCDockRight");
                 case ShowcaseInfoPanelPosition.Bottom:
-                    return Localize("LOCPlayAch_Settings_GridVerticalAlignment_Bottom");
+                    return Localize("LOCDockBottom");
                 default:
                     return Localize("LOCPlayAch_Settings_Override_Off");
             }

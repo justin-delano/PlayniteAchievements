@@ -354,7 +354,7 @@ namespace PlayniteAchievements.Views
         private void InitializeProviders()
         {
             var readyText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Ready");
-            var disabledText = L("LOCPlayAch_Common_Status_Disabled");
+            var disabledText = L("LOCDisabledTitle");
             var noAuthText = L("LOCPlayAch_Common_NotAuthenticated");
 
             foreach (var provider in _refreshRuntime.Providers ?? Array.Empty<IDataProvider>())
@@ -432,16 +432,16 @@ namespace PlayniteAchievements.Views
 
         private void InitializeScopes()
         {
-            ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsRecent") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_Recent") });
             if (_settings?.Persisted?.IncludeUnownedFriendGames == true)
             {
                 // Full scans unowned friend games; hidden when the global toggle excludes them
                 // (the request planner also clamps Full to Shared as a backstop).
-                ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Full, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsFull") });
+                ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Full, DisplayName = L("LOCPlayAch_RefreshModeShort_Full") });
             }
 
             ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Shared, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsShared") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsInstalled") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_Installed") });
             if (_selectedGameId.HasValue)
             {
                 ScopeOptions.Add(new ScopeOptionItem
@@ -726,7 +726,7 @@ namespace PlayniteAchievements.Views
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .ToList();
             var providerDisplay = selectedProviders.Count == 0
-                ? L("LOCPlayAch_Common_None")
+                ? L("LOCNone")
                 : string.Join(", ", selectedProviders);
             var scopeDisplay = ScopeOptions
                 .FirstOrDefault(option => option.Scope == SelectedScope)

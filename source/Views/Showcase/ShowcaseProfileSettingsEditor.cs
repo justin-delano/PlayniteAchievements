@@ -78,7 +78,7 @@ namespace PlayniteAchievements.Views.Showcase
                 _onChanged);
             AddImagePicker(
                 panel,
-                Localize("LOCPlayAch_Showcase_ProfileAvatar"),
+                Localize("LOCPlayAch_Column_Avatar"),
                 () => _profile.AvatarPath,
                 value => _profile.AvatarPath = value);
             AddImagePicker(
@@ -157,7 +157,7 @@ namespace PlayniteAchievements.Views.Showcase
 
             var add = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Add"),
+                Content = Localize("LOCAddTitle"),
                 MinWidth = 82
             };
             add.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");
@@ -255,7 +255,7 @@ namespace PlayniteAchievements.Views.Showcase
                 AddLinkButton(row, 3, "\uEA5B", "LOCPlayAch_Showcase_MoveLater", index < _links.Count - 1,
                     () => MoveLink(index, 1));
 
-                AddLinkButton(row, 4, "\uEE09", "LOCPlayAch_Button_Remove", true, () =>
+                AddLinkButton(row, 4, "\uEE09", "LOCRemoveLabel", true, () =>
                 {
                     _links.RemoveAt(index);
                     CommitLinks();
@@ -384,7 +384,7 @@ namespace PlayniteAchievements.Views.Showcase
             row.Children.Add(browse);
             var clear = new Button
             {
-                Content = Localize("LOCPlayAch_Button_Clear"),
+                Content = Localize("LOCClearLabel"),
                 MinWidth = 72
             };
             clear.SetResourceReference(MarginProperty, "PlayAch.Thickness.Left.Sm");

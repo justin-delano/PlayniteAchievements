@@ -35,7 +35,7 @@ namespace PlayniteAchievements.Providers.GameJolt
                     return ProviderOverrideValidation.Valid(gameId.ToString(CultureInfo.InvariantCulture));
                 }
 
-                return ProviderOverrideValidation.Invalid("LOCPlayAch_Menu_GameJoltGameId_InvalidId");
+                return ProviderOverrideValidation.InvalidId("12345");
             });
 
         private readonly ILogger _logger;

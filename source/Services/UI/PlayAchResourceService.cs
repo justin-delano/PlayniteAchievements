@@ -72,7 +72,7 @@ namespace PlayniteAchievements.Services.UI
             Brush("PlayAch.Brush.GridSurface", "LOCPlayAch_Settings_Appearance_Resource_GridSurface", "GridItemBackgroundBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.Border", "LOCPlayAch_Settings_Appearance_Resource_Border", "NormalBorderBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.ControlBorder", "LOCPlayAch_Settings_Appearance_Resource_ControlBorder", "NormalBrush", "SelectionLightBrush"),
-            Brush("PlayAch.Brush.Glyph", "LOCPlayAch_Settings_Appearance_Resource_Glyph", "GlyphBrush"),
+            Brush("PlayAch.Brush.Glyph", "LOCPlayAch_ManageAchievements_Tab_CustomIcons", "GlyphBrush"),
             Brush("PlayAch.Brush.Accent", "LOCPlayAch_Settings_Appearance_Resource_Accent", "HighlightGlyphBrush", "GlyphBrush"),
             Brush("PlayAch.Brush.Selection", "LOCPlayAch_Settings_Appearance_Resource_Selection", "SelectionLightBrush", "GlyphBrush"),
             Brush("PlayAch.Brush.ControlSurface", "LOCPlayAch_Settings_Appearance_Resource_ControlSurface", "ButtonBackgroundBrush", "ControlBackgroundBrush"),

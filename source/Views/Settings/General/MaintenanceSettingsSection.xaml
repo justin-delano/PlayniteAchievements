@@ -23,9 +23,6 @@
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Maintenance_Title}"
                                Style="{StaticResource SectionHeaderStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Maintenance_Description}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"/>
 
                     <Border Style="{StaticResource SettingGroupCardStyle}" Grid.IsSharedSizeScope="True">
                         <StackPanel>
@@ -37,7 +34,7 @@
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_CachedAchievementData_ClearDescription}">
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Click="WipeCache_Click"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                         MinWidth="130"/>
@@ -45,7 +42,7 @@
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ClearUnownedFriendData_Description}"
                                                  Margin="0">
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Click="ClearUnownedFriendGameData_Click"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                         MinWidth="130"/>
@@ -63,7 +60,7 @@
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_IconCache_ClearAllDescription}">
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Click="ClearAllIconCache_Click"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                         MinWidth="130"/>
@@ -71,7 +68,7 @@
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_IconCache_ClearLockedDescription}"
                                                  Margin="0">
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Click="ClearLockedIconCache_Click"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                         MinWidth="130"/>
@@ -129,9 +126,6 @@
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Title}"
                                        Style="{StaticResource SubSectionHeaderStyle}"
-                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Description}"
-                                       Style="{StaticResource MutedTextStyle}"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                             <controls:SettingRow Label="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetup}">

@@ -80,7 +80,7 @@
                             <WrapPanel Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
                                 <Border Style="{StaticResource MetaChipStyle}">
                                     <TextBlock Style="{StaticResource ChipTextStyle}">
-                                        <Run Text="{DynamicResource LOCPlayAch_ManageAchievements_Overview_Provider}" /><Run Text=": " /><Run Text="{Binding ProviderName, Mode=OneWay}" />
+                                        <Run Text="{DynamicResource LOCPlatformTitle}" /><Run Text=": " /><Run Text="{Binding ProviderName, Mode=OneWay}" />
                                     </TextBlock>
                                 </Border>
                                 <Border Style="{StaticResource MetaChipStyle}">
@@ -111,7 +111,7 @@
                         <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Top">
-                            <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                            <Button Content="{DynamicResource LOCClearLabel}"
                                     Command="{Binding ClearGameDataCommand}"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                     MinWidth="100"
@@ -194,7 +194,7 @@
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                         VerticalAlignment="Center"
                                         Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Command="{Binding ClearProviderOverrideCommand}"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                         VerticalAlignment="Center"
@@ -228,7 +228,7 @@
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                         VerticalAlignment="Center"
                                         Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
-                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                <Button Content="{DynamicResource LOCClearLabel}"
                                         Command="{Binding ClearExophaseEnrichmentSlugCommand}"
                                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                         VerticalAlignment="Center"
@@ -242,8 +242,7 @@
                             <!-- Exclusion: one choice between the refresh and summary exclusions. -->
                             <TextBlock Grid.Row="4" Grid.Column="0"
                                        Style="{StaticResource SettingLabelStyle}"
-                                       Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}"
-                                       ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHint}" />
+                                       Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}" />
                             <ComboBox Grid.Row="4" Grid.Column="1"
                                       ItemsSource="{Binding ExclusionModeOptions}"
                                       DisplayMemberPath="DisplayName"
@@ -318,7 +317,7 @@
                                     </ContextMenu>
                                 </Button.ContextMenu>
                             </Button>
-                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ImportButton}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
+                            <Button Content="{DynamicResource LOCImportLabel}" ContentTemplate="{DynamicResource PlayAch.ButtonContent.Import}"
                                     Click="ContextMenuButton_Click"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                     Margin="{StaticResource PlayAch.Thickness.Right.Sm}">
@@ -378,8 +377,8 @@
                                     Command="{Binding UpdateWorkshopDataCommand}" />
                             <Button Content="&#xEE0B;"
                                     Style="{StaticResource OverviewIconButtonStyle}"
-                                    ToolTip="{DynamicResource LOCPlayAch_Button_Reset}"
-                                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Reset}"
+                                    ToolTip="{DynamicResource LOCResetLabel}"
+                                    AutomationProperties.Name="{DynamicResource LOCResetLabel}"
                                     Command="{Binding ResetWorkshopDataCommand}" />
                             <Button Content="&#xEDF8;"
                                     Style="{StaticResource OverviewIconButtonStyle}"

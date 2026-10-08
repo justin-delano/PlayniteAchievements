@@ -131,7 +131,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCategoryTypeFilterText => GetSelectedFilterText(
             _selectedCategoryTypeFilters,
             CategoryTypeFilterOptions,
-            L("LOCPlayAch_Common_Label_Type"),
+            L("LOCTypeLabel"),
             AchievementCategoryTypeHelper.ToCategoryTypeDisplayText);
 
         public ObservableCollection<string> CategoryLabelFilterOptions { get; }
@@ -139,7 +139,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCategoryLabelFilterText => GetSelectedFilterText(
             _selectedCategoryLabelFilters,
             CategoryLabelFilterOptions,
-            L("LOCPlayAch_Common_Label_Category"),
+            L("LOCCategoryLabel"),
             AchievementCategoryTypeHelper.ToCategoryLabelDisplayText);
 
         public IReadOnlyList<AchievementDisplayItem> Apply(IEnumerable<AchievementDisplayItem> source)

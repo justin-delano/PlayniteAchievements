@@ -53,15 +53,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             new[]
             {
                 Tuple.Create(AchievementCustomizationFacet.DisplayName, "LOCPlayAch_Column_AchievementName"),
-                Tuple.Create(AchievementCustomizationFacet.Description, "LOCPlayAch_Column_Description"),
+                Tuple.Create(AchievementCustomizationFacet.Description, "LOCGameDescriptionTitle"),
                 Tuple.Create(AchievementCustomizationFacet.UnlockedIcon, "LOCPlayAch_ManageAchievements_Custom_UnlockedIcon"),
                 Tuple.Create(AchievementCustomizationFacet.LockedIcon, "LOCPlayAch_ManageAchievements_Custom_LockedIcon"),
                 Tuple.Create(AchievementCustomizationFacet.Points, "LOCPlayAch_Column_Points"),
                 Tuple.Create(AchievementCustomizationFacet.TrophyType, "LOCPlayAch_Column_Trophy"),
                 Tuple.Create(AchievementCustomizationFacet.UnlockTime, "LOCPlayAch_Common_UnlockTime"),
-                Tuple.Create(AchievementCustomizationFacet.Category, "LOCPlayAch_Common_Label_Category"),
+                Tuple.Create(AchievementCustomizationFacet.Category, "LOCCategoryLabel"),
                 Tuple.Create(AchievementCustomizationFacet.CategoryType, "LOCPlayAch_ManageAchievements_Category_TypeSelectorLabel"),
-                Tuple.Create(AchievementCustomizationFacet.Hidden, "LOCPlayAch_ManageAchievements_Custom_Hidden"),
+                Tuple.Create(AchievementCustomizationFacet.Hidden, "LOCPlayAch_Filter_Hidden"),
                 Tuple.Create(AchievementCustomizationFacet.Note, "LOCPlayAch_ManageAchievements_Notes_Note"),
                 Tuple.Create(AchievementCustomizationFacet.FilterScope, "LOCPlayAch_Menu_Filters"),
                 Tuple.Create(AchievementCustomizationFacet.Goal, "LOCPlayAch_ManageAchievements_Editor_Goal"),

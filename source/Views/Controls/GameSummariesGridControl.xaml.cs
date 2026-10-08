@@ -1588,7 +1588,7 @@ namespace PlayniteAchievements.Views.Controls
                     "GameSummaryName",
                     StringComparison.OrdinalIgnoreCase))
                 {
-                    var header = ResourceProvider.GetString("LOCPlayAch_Common_Label_Category");
+                    var header = ResourceProvider.GetString("LOCCategoryLabel");
                     column.Header = string.IsNullOrWhiteSpace(header) ? "Category" : header;
                     return;
                 }

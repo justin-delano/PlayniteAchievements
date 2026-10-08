@@ -348,7 +348,7 @@
             </DataGridTemplateColumn>
 
             <DataGridTemplateColumn Width="44" MinWidth="28" MaxWidth="96"
-                                    Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                                    Header="{DynamicResource LOCPlatformTitle}"
                                     CanUserResize="True"
                                     CanUserSort="False"
                                     helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryPlatform">
@@ -439,7 +439,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryLastPlayed">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCLastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryLastPlayed">
                 <DataGridTemplateColumn.CellStyle>
                     <Style TargetType="DataGridCell" BasedOn="{StaticResource GameSummariesGridCellStyle}">
                         <Setter Property="ToolTip">

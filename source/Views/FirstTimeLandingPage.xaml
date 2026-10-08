@@ -551,7 +551,7 @@
                                       Background="Transparent"
                                       BorderThickness="0">
                                 <Expander.Header>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Common_Custom}"
+                                    <TextBlock Text="{DynamicResource LOCCustomLabel}"
                                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"/>
                                 </Expander.Header>
@@ -668,7 +668,7 @@
                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                       VerticalContentAlignment="Center"
                                       IsEnabled="{Binding HasRevertableThemes}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_RevertButton}"
+                            <Button Content="{DynamicResource LOCPlayAch_ManageAchievements_Editor_Revert}"
                                     Command="{Binding RevertThemeCommand}"
                                     Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                                     MinWidth="100"

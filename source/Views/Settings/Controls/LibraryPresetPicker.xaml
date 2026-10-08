@@ -85,16 +85,16 @@
 
             <Button Content="&#xEE00;"
                     Style="{StaticResource PickerIconButtonStyle}"
-                    ToolTip="{DynamicResource LOCPlayAch_Presets_Save}"
-                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Presets_Save}"
+                    ToolTip="{DynamicResource LOCPlayAch_Presets_NameDialogTitle}"
+                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Presets_NameDialogTitle}"
                     VerticalAlignment="Center"
                     Click="Save_Click"/>
 
             <Button x:Name="DeleteButton"
                     Content="&#xEE09;"
                     Style="{StaticResource PickerIconButtonStyle}"
-                    ToolTip="{DynamicResource LOCPlayAch_Button_Delete}"
-                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Button_Delete}"
+                    ToolTip="{DynamicResource LOCPlayAch_Common_Delete}"
+                    AutomationProperties.Name="{DynamicResource LOCPlayAch_Common_Delete}"
                     ToolTipService.ShowOnDisabled="True"
                     VerticalAlignment="Center"
                     IsEnabled="False"

@@ -198,7 +198,7 @@
                                                                Visibility="{Binding IsToBlank, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"/>
                                                 </Grid>
                                                 <Button x:Name="PART_Clear"
-                                                        Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                                        Content="{DynamicResource LOCClearLabel}"
                                                         Style="{StaticResource PlayAch.Button.BaseStyle}"
                                                         Padding="10,0"
                                                         Margin="8,0,0,0"
@@ -254,7 +254,7 @@
                                                Visibility="{Binding IsToBlank, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"/>
                                 </Grid>
                                 <Button x:Name="PART_InlineClear"
-                                        Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                        Content="{DynamicResource LOCClearLabel}"
                                         Style="{StaticResource PlayAch.Button.BaseStyle}"
                                         Padding="10,0"
                                         Margin="8,0,0,0"

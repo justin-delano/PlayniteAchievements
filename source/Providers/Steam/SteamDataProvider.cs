@@ -47,8 +47,7 @@ namespace PlayniteAchievements.Providers.Steam
                     return ProviderOverrideValidation.Valid(appId.ToString(CultureInfo.InvariantCulture));
                 }
 
-                return ProviderOverrideValidation.Invalid(
-                    "LOCPlayAch_Menu_SteamAppId_InvalidId");
+                return ProviderOverrideValidation.InvalidId("440");
             });
 
         private readonly SteamHttpClient _steamClient;

@@ -130,7 +130,7 @@
                                 <Border Grid.Column="5"
                                         IsEnabled="{Binding DataContext.IsEditable, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
                                     <Button Click="UnlockSoundClear_Click"
-                                            Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                            Content="{DynamicResource LOCClearLabel}"
                                             IsEnabled="{Binding HasCustomPath}"
                                             Margin="6,0,0,0"/>
                                 </Border>

@@ -164,7 +164,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Style="{StaticResource PlayAch.Screenshot.InfoLabel}"
-                               Text="{DynamicResource LOCPlayAch_Common_Label_Category}"/>
+                               Text="{DynamicResource LOCCategoryLabel}"/>
                     <TextBlock Grid.Column="1"
                                Style="{StaticResource PlayAch.Screenshot.InfoValue}"
                                Text="{Binding CategoryLabelPathDisplay, Mode=OneWay}"/>
@@ -179,7 +179,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Style="{StaticResource PlayAch.Screenshot.InfoLabel}"
-                               Text="{DynamicResource LOCPlayAch_Common_Label_Type}"/>
+                               Text="{DynamicResource LOCTypeLabel}"/>
                     <TextBlock Grid.Column="1"
                                Style="{StaticResource PlayAch.Screenshot.InfoValue}"
                                Text="{Binding CategoryTypeDisplay, Mode=OneWay}"/>

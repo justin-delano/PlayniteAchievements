@@ -54,7 +54,7 @@
                                 Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Compact}"/>
                         <Button Grid.Column="3"
-                                Content="{DynamicResource LOCPlayAch_Button_Remove}"
+                                Content="{DynamicResource LOCRemoveLabel}"
                                 Click="Remove_Click"
                                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Compact}"/>
                     </Grid>
@@ -62,7 +62,7 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Button Content="{DynamicResource LOCPlayAch_Button_Add}"
+        <Button Content="{DynamicResource LOCAddTitle}"
                 HorizontalAlignment="Left"
                 Click="Add_Click"
                 Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Compact}"/>

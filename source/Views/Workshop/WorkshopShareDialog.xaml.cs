@@ -370,9 +370,9 @@ namespace PlayniteAchievements.Views.Workshop
             {
                 StatusText.Text = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Status_Failed"),
-                    ResourceProvider.GetString("LOCPlayAch_Column_Name") + ", " +
+                    ResourceProvider.GetString("LOCNameLabel") + ", " +
                     ResourceProvider.GetString("LOCPlayAch_Workshop_Share_AuthorName") + ", " +
-                    ResourceProvider.GetString("LOCPlayAch_Column_Description"));
+                    ResourceProvider.GetString("LOCGameDescriptionTitle"));
                 return;
             }
 

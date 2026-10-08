@@ -460,11 +460,11 @@ namespace PlayniteAchievements.ViewModels
             SelectedRefreshMode,
             RefreshModeType.FriendsCustom.GetKey(),
             StringComparison.Ordinal)
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
+            ? ResourceProvider.GetString("LOCConfigure")
             : ResourceProvider.GetString("LOCPlayAch_Button_Refresh");
 
         public string RefreshOrCancelButtonText => IsRefreshing
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
+            ? ResourceProvider.GetString("LOCCancelLabel")
             : RefreshActionButtonText;
 
         public string RefreshOrCancelButtonGlyph => IsRefreshing
@@ -548,11 +548,11 @@ namespace PlayniteAchievements.ViewModels
                 : GetSelectedFilterText(
                     _selectedFriendProviderFilters,
                     FriendProviderFilterOptions,
-                    ResourceProvider.GetString("LOCPlayAch_Common_Label_Platform"));
+                    ResourceProvider.GetString("LOCPlatformTitle"));
 
         public string SelectedGamePlatformFilterText => OverviewGameSummaryFilters.BuildProviderFilterText(
             GamePlatformFilterGroups,
-            ResourceProvider.GetString("LOCPlayAch_Common_Label_Platform"));
+            ResourceProvider.GetString("LOCPlatformTitle"));
 
         public string SelectedOwnershipFilterText => GetSelectedFilterText(
             _selectedOwnershipFilters,
@@ -598,7 +598,7 @@ namespace PlayniteAchievements.ViewModels
                         SelectedGame.GameName);
                 }
 
-                return ResourceProvider.GetString("LOCPlayAch_RecentAchievements");
+                return ResourceProvider.GetString("LOCPlayAch_Achievements");
             }
         }
 

@@ -126,8 +126,8 @@ namespace PlayniteAchievements.Tests.Services
             Assert.AreEqual(1, counts["LOCPlayAch_ManageAchievements_Custom_LockedIcon"]);
             Assert.AreEqual(1, counts["LOCPlayAch_ManageAchievements_Notes_Note"]);
             Assert.AreEqual(1, counts["LOCPlayAch_Common_UnlockTime"]);
-            Assert.AreEqual(1, counts["LOCPlayAch_ManageAchievements_Custom_Hidden"]);
-            Assert.IsFalse(counts.ContainsKey("LOCPlayAch_Column_Description"));
+            Assert.AreEqual(1, counts["LOCPlayAch_Filter_Hidden"]);
+            Assert.IsFalse(counts.ContainsKey("LOCGameDescriptionTitle"));
         }
 
         [TestMethod]

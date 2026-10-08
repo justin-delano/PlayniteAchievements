@@ -122,12 +122,12 @@ namespace PlayniteAchievements.Views
                 {
                     if (IsChecking)
                     {
-                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeChecking")
+                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_Checking")
                             ?? "Checking";
                     }
                     if (!IsEnabled)
                     {
-                        return ResourceProvider.GetString("LOCPlayAch_Common_Status_Disabled");
+                        return ResourceProvider.GetString("LOCDisabledTitle");
                     }
                     return IsAuthenticated
                         ? ResourceProvider.GetString("LOCPlayAch_CustomRefresh_ProviderStatus_Ready")
@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Views
             SelectedRefreshMode,
             RefreshModeType.Custom.GetKey(),
             StringComparison.Ordinal)
-            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
+            ? ResourceProvider.GetString("LOCConfigure")
             : ResourceProvider.GetString("LOCPlayAch_Landing_BeginRefresh");
 
         /// <summary>

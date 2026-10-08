@@ -54,7 +54,7 @@
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"
-                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Riot_SetupStep1}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1}"
                                    helpers:HyperlinkFormatText.LinkText="Riot Developer Portal"
                                    helpers:HyperlinkFormatText.NavigateUri="https://developer.riotgames.com/"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Riot_SetupStep2}"
@@ -148,7 +148,7 @@
                                                    Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                                    TextWrapping="Wrap"/>
 
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                                        <TextBlock Text="{DynamicResource LOCRegionLabel}"
                                                    Margin="0,12,0,8"/>
                                         <ComboBox x:Name="RegionCombo"
                                                   DisplayMemberPath="Label"
@@ -156,7 +156,7 @@
                                                   SelectedValue="{Binding Settings.PlatformRegion, Mode=TwoWay}"
                                                   Padding="4"/>
 
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_ApiKey}"
+                                        <TextBlock Text="{DynamicResource LOCAPIKey}"
                                                    Margin="0,12,0,8"/>
                                         <TextBox Text="{Binding Settings.RiotApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Padding="4"/>

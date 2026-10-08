@@ -47,14 +47,14 @@
             <StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right">
-                <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
+                <Button Content="{DynamicResource LOCOKLabel}"
                         Click="OkButton_Click"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"
                         Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                         IsDefault="True"/>
 
-                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                <Button Content="{DynamicResource LOCCancelLabel}"
                         Click="CancelButton_Click"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"

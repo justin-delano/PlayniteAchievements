@@ -281,7 +281,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     return L("LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings");
                 }
 
-                return L("LOCPlayAch_Common_Status_Disabled");
+                return L("LOCDisabledTitle");
             }
         }
 
@@ -442,7 +442,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public string ExophaseEnrichmentSlugStatusText =>
             HasExophaseEnrichmentSlugOverride
                 ? string.Format(
-                    L("LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentStatusValue"),
+                    L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue"),
                     _exophaseEnrichmentSlugValue)
                 : L("LOCPlayAch_Common_Status_NoOverrideSet");
 
@@ -604,7 +604,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public IReadOnlyList<GameExclusionOption> ExclusionModeOptions { get; } = new[]
         {
-            new GameExclusionOption(GameExclusionMode.None, L("LOCPlayAch_Common_None")),
+            new GameExclusionOption(GameExclusionMode.None, L("LOCNone")),
             new GameExclusionOption(GameExclusionMode.Refreshes, L("LOCPlayAch_ManageAchievements_Status_ExcludedFromRefreshes")),
             new GameExclusionOption(GameExclusionMode.Summaries, L("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries"))
         };
@@ -905,7 +905,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     ? capstone.DisplayName.Trim()
                     : !string.IsNullOrWhiteSpace(capstone?.ApiName)
                         ? capstone.ApiName.Trim()
-                        : L("LOCPlayAch_Common_None");
+                        : L("LOCNone");
                 HasAchievementData = (gameData?.HasAchievements ?? false) && list.Count > 0;
 
                 var currentCustomData = TryLoadStoredCustomData(_plugin?.GameCustomDataStore);
@@ -1107,10 +1107,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessageKey))
+            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessage))
             {
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L(validationMessageKey),
+                    validationMessage,
                     L("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
@@ -1793,7 +1793,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         internal void NotifyCapstoneChanged(string displayName)
         {
             CurrentCapstoneName = string.IsNullOrWhiteSpace(displayName)
-                ? L("LOCPlayAch_Common_None")
+                ? L("LOCNone")
                 : displayName.Trim();
             RefreshCustomDataState();
             // The sidebar's capstone chip comes from OverviewSummary, which only the shell reload
@@ -2086,23 +2086,25 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             string providerKey,
             string value,
             out ProviderOverrideData providerOverride,
-            out string validationMessageKey)
+            out string validationMessage)
         {
             providerOverride = null;
-            validationMessageKey = null;
+            validationMessage = null;
 
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             var descriptor = GetProviderOverrideDescriptor(normalizedKey);
             if (descriptor == null)
             {
-                validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessage = L("LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid");
                 return false;
             }
 
             var result = descriptor.Validate(value);
             if (!result.IsValid)
             {
-                validationMessageKey = result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessage = result.ErrorExample != null
+                    ? string.Format(L(result.ErrorMessageKey), L(descriptor.InputLabelKey), result.ErrorExample)
+                    : L(result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid");
                 return false;
             }
 
@@ -2121,7 +2123,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 new ProviderOverrideOption
                 {
                     ProviderKey = ProviderOverrideNoneKey,
-                    DisplayName = L("LOCPlayAch_Common_None"),
+                    DisplayName = L("LOCNone"),
                     Descriptor = null
                 }
             };
@@ -2159,7 +2161,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             if (string.Equals(normalizedKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
             {
-                return L("LOCPlayAch_Common_None");
+                return L("LOCNone");
             }
 
             return ProviderRegistry.GetLocalizedName(normalizedKey);

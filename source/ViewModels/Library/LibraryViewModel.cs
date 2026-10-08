@@ -81,7 +81,7 @@ namespace PlayniteAchievements.ViewModels.Library
             _dispatcher = Dispatcher.CurrentDispatcher;
             _focusGameId = focusGameId;
 
-            Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCPlayAch_Common_All")) };
+            Filters = new List<LibraryKindFilter> { new LibraryKindFilter(null, ResourceProvider.GetString("LOCAll")) };
             Filters.AddRange(KindOrder.Select(kind => new LibraryKindFilter(kind, LibraryItemRow.KindLabelFor(kind))));
             _selectedFilter = Filters.FirstOrDefault(filter => filter.Kind == focusKind) ?? Filters[0];
             _selectedFilter.IsSelected = true;
@@ -505,8 +505,8 @@ namespace PlayniteAchievements.ViewModels.Library
             var surface = key.StartsWith("sounds:", StringComparison.OrdinalIgnoreCase)
                 ? L("LOCPlayAch_Workshop_Share_Sounds")
                 : key.StartsWith("frame:", StringComparison.OrdinalIgnoreCase)
-                    ? L("LOCPlayAch_Workshop_Share_GlobalFrame")
-                    : L("LOCPlayAch_Workshop_Share_GlobalStyle");
+                    ? L("LOCPlayAch_Settings_FrameHeader")
+                    : L("LOCPlayAch_Settings_Style_ToastTab");
             if (string.Equals(key, LibraryTargetKeys.ToastGlobal, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(key, LibraryTargetKeys.FrameGlobal, StringComparison.OrdinalIgnoreCase))
             {

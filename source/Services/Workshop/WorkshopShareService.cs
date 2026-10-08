@@ -102,14 +102,14 @@ namespace PlayniteAchievements.Services.Workshop
             result.Add(new WorkshopShareCandidate
             {
                 Kind = WorkshopItemKind.NotificationStyle,
-                Label = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalStyle"),
-                DefaultName = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalStyle")
+                Label = ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab"),
+                DefaultName = ResourceProvider.GetString("LOCPlayAch_Settings_Style_ToastTab")
             });
             result.Add(new WorkshopShareCandidate
             {
                 Kind = WorkshopItemKind.ScreenshotFrame,
-                Label = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalFrame"),
-                DefaultName = ResourceProvider.GetString("LOCPlayAch_Workshop_Share_GlobalFrame")
+                Label = ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader"),
+                DefaultName = ResourceProvider.GetString("LOCPlayAch_Settings_FrameHeader")
             });
 
             var resolved = _plugin.UnlockSounds?.Resolver?.ResolveAll();
