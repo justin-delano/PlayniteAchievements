@@ -246,7 +246,7 @@
                             <Grid HorizontalAlignment="Center"
                                   VerticalAlignment="Center">
                                 <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                        ClipToBounds="True"
+                                        helpers:RoundedClip.Radius="6"
                                         RenderOptions.BitmapScalingMode="HighQuality"
                                         UseLayoutRounding="True"
                                         SnapsToDevicePixels="True">

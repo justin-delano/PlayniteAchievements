@@ -49,11 +49,20 @@
          completion frame mirrors it for the right-hand branch. -->
     <Geometry x:Key="CompletionFrameLaurelGeometry">F1 M30,5.4 L3,5.4 L3,6.6 L30,6.6 Z M28,6 C27,1.5 23,0 20.5,0.5 C22,3.5 25,5.5 28,6 Z M28,6 C27,10.5 23,12 20.5,11.5 C22,8.5 25,6.5 28,6 Z M22,6 C21,1.5 17,0 14.5,0.5 C16,3.5 19,5.5 22,6 Z M22,6 C21,10.5 17,12 14.5,11.5 C16,8.5 19,6.5 22,6 Z M16,6 C15,1.5 11,0 8.5,0.5 C10,3.5 13,5.5 16,6 Z M16,6 C15,10.5 11,12 8.5,11.5 C10,8.5 13,6.5 16,6 Z M10,6 C9,1.5 5,0 2.5,0.5 C4,3.5 7,5.5 10,6 Z M10,6 C9,10.5 5,12 2.5,11.5 C4,8.5 7,6.5 10,6 Z M4,6 C2.5,3.8 0.5,4.5 0,6 C0.5,7.5 2.5,8.2 4,6 Z</Geometry>
 
+    <!-- Metallic sheen laid over the frame's completed-brush shapes: light toward the top left,
+         clear through the middle, shaded toward the bottom right. The clear stops are transparent
+         white and transparent black so neither half greys toward the other. -->
+    <LinearGradientBrush x:Key="CompletionFrameSheenBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0" Color="{StaticResource PlayAch.Color.Overlay.Tint.40}"/>
+        <GradientStop Offset="0.45" Color="{StaticResource PlayAch.Color.Overlay.Transparent}"/>
+        <GradientStop Offset="0.55" Color="{StaticResource CompletionFrameScrimClear}"/>
+        <GradientStop Offset="1" Color="{StaticResource PlayAch.Color.Overlay.Shade.42}"/>
+    </LinearGradientBrush>
+
     <!-- Completion frame, drawn entirely on the cover art in the style of a mythic cover frame: a
-         darkening scrim along the bottom; a thick band in the completed brush, heavier along the
-         bottom, with a dark outer edge, a light bevel on its inner edge and a thin inset line;
-         diamond studs in the bottom corners; and the completion badge on a dark plate resting on
-         the bottom band between two laurel branches.
+         light scrim along the bottom, a thick band in the completed brush (heavier along the
+         bottom) with a metallic sheen and a dark outer edge, and a diamond emblem carrying the
+         completion badge on the bottom band between two laurel branches.
          Hosts place a Control with this template over the art, its DataContext the game summary
          row, and set helpers:CompletionBadge.FrameBadgeSize and FrameCornerRadius on it. -->
     <ControlTemplate x:Key="CompletionFrameTemplate" TargetType="Control">
@@ -62,8 +71,8 @@
                     CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Offset="0.6" Color="{StaticResource CompletionFrameScrimClear}"/>
-                        <GradientStop Offset="1" Color="{StaticResource PlayAch.Color.Overlay.Shade.80}"/>
+                        <GradientStop Offset="0.7" Color="{StaticResource CompletionFrameScrimClear}"/>
+                        <GradientStop Offset="1" Color="{StaticResource PlayAch.Color.Overlay.Shade.54}"/>
                     </LinearGradientBrush>
                 </Border.Background>
             </Border>
@@ -72,39 +81,14 @@
                     BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
                     CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}"/>
             <Border IsHitTestVisible="False"
+                    BorderThickness="4,4,4,6"
+                    BorderBrush="{StaticResource CompletionFrameSheenBrush}"
+                    CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}"/>
+            <Border IsHitTestVisible="False"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource PlayAch.Brush.Overlay.Shade.54}"
                     CornerRadius="{TemplateBinding helpers:CompletionBadge.FrameCornerRadius}"/>
-            <Border IsHitTestVisible="False"
-                    Margin="3,3,3,5"
-                    BorderThickness="1"
-                    BorderBrush="{DynamicResource PlayAch.Brush.Overlay.Tint.40}"
-                    CornerRadius="2"/>
-            <Border IsHitTestVisible="False"
-                    Margin="6,6,6,8"
-                    BorderThickness="1"
-                    BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
-                    Opacity="0.55"
-                    CornerRadius="1"/>
-            <Grid IsHitTestVisible="False" Margin="8,0,8,10">
-                <Grid.Resources>
-                    <Style TargetType="Rectangle">
-                        <Setter Property="Width" Value="5"/>
-                        <Setter Property="Height" Value="5"/>
-                        <Setter Property="VerticalAlignment" Value="Bottom"/>
-                        <Setter Property="Fill" Value="{DynamicResource PlayAch.Brush.CompletedGame}"/>
-                        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
-                        <Setter Property="RenderTransform">
-                            <Setter.Value>
-                                <RotateTransform Angle="45"/>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Grid.Resources>
-                <Rectangle HorizontalAlignment="Left"/>
-                <Rectangle HorizontalAlignment="Right"/>
-            </Grid>
-            <Grid VerticalAlignment="Bottom" Margin="11,0,11,2">
+            <Grid VerticalAlignment="Bottom" Margin="8,0,8,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -115,26 +99,41 @@
                       Data="{StaticResource CompletionFrameLaurelGeometry}"
                       Stretch="Uniform"
                       MaxHeight="14"
-                      Margin="0,0,-6,0"
+                      Margin="0,0,-4,0"
                       HorizontalAlignment="Right"
                       VerticalAlignment="Center"
                       Fill="{DynamicResource PlayAch.Brush.CompletedGame}"/>
-                <Border Grid.Column="1"
-                        Background="{DynamicResource PlayAch.Brush.Overlay.Shade.80}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
-                        BorderThickness="2"
-                        CornerRadius="999"
-                        Padding="3">
+                <!-- The emblem: a diamond in the completed brush with the same sheen and edge as
+                     the band, the badge centred on it. -->
+                <Grid Grid.Column="1">
+                    <Grid IsHitTestVisible="False"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                        <Grid.LayoutTransform>
+                            <RotateTransform Angle="45"/>
+                        </Grid.LayoutTransform>
+                        <Rectangle Margin="3"
+                                   Width="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"
+                                   Height="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"/>
+                        <Border Background="{DynamicResource PlayAch.Brush.CompletedGame}"
+                                CornerRadius="2"/>
+                        <Border Background="{StaticResource CompletionFrameSheenBrush}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Overlay.Shade.54}"
+                                BorderThickness="1"
+                                CornerRadius="2"/>
+                    </Grid>
                     <Image Style="{StaticResource CompletionBadgeImageStyle}"
                            Width="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"
-                           Height="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"/>
-                </Border>
+                           Height="{TemplateBinding helpers:CompletionBadge.FrameBadgeSize}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                </Grid>
                 <Path Grid.Column="2"
                       IsHitTestVisible="False"
                       Data="{StaticResource CompletionFrameLaurelGeometry}"
                       Stretch="Uniform"
                       MaxHeight="14"
-                      Margin="-6,0,0,0"
+                      Margin="-4,0,0,0"
                       HorizontalAlignment="Left"
                       VerticalAlignment="Center"
                       RenderTransformOrigin="0.5,0.5"
