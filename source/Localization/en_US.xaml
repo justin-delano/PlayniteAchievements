@@ -1605,7 +1605,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">To file...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SavedAsPreset">Saved as preset "{0}". Choose it in the preset list to apply it.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdatesAvailable">Workshop updates available: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">Kept your edits to {0} items; everything else was updated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">Kept your edits: {0}. Everything else was updated.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptPreset">Your edited preset "{0}" was kept; the new version was saved as "{1}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Account">Account</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Submitter key</sys:String>
@@ -1647,8 +1647,8 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">After</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">Show unchanged achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_PackageOnly">This game is not in your library, so the package contents are shown without a comparison.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">{0} icons · {1} overrides · {2} categories · {3} capstones · {4} custom achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Your edits to {0} items will be kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">Icons: {0} · Overrides: {1} · Categories: {2} · Capstones: {3} · Custom achievements: {4}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Your edits will be kept: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">and {0} more</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">Rendering preview...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">Cover image</sys:String>
