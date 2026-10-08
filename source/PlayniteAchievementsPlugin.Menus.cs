@@ -732,51 +732,69 @@ namespace PlayniteAchievements
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             var refreshInProgress = IsRefreshInProgress();
+            var isFullscreen = IsFullscreenMode();
             if (refreshInProgress)
             {
                 foreach (var item in GetRefreshInProgressMainMenuHeader())
                 {
                     yield return item;
                 }
+
+                yield return new MainMenuItem
+                {
+                    Description = "-",
+                    MenuSection = PluginMainMenuSection
+                };
             }
+
+            // The Overview, settings and the Workshop show in every mode, mid-refresh included.
+            // Fullscreen can't open Playnite's native plugin-settings dialog (OpenSettingsView is
+            // a no-op there), so it hosts the plugin's settings UI in a managed popout that saves
+            // on close.
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview"),
+                MenuSection = PluginMainMenuSection,
+                Action = (a) =>
+                {
+                    OpenOverviewWindow();
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Landing_OpenSettings"),
+                MenuSection = PluginMainMenuSection,
+                Action = (a) =>
+                {
+                    if (isFullscreen)
+                    {
+                        OpenSettingsWindow();
+                    }
+                    else
+                    {
+                        OpenSettingsView();
+                    }
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Workshop_Title"),
+                MenuSection = PluginMainMenuSection,
+                Action = (a) =>
+                {
+                    ToggleWorkshopTabWindow();
+                }
+            };
 
             if (!refreshInProgress)
             {
-                // Fullscreen-only: overview window (desktop uses the overview panel).
-                var isFullscreen = IsFullscreenMode();
-
-                if (isFullscreen)
+                yield return new MainMenuItem
                 {
-                    yield return new MainMenuItem
-                    {
-                        Description = ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview"),
-                        MenuSection = PluginMainMenuSection,
-                        Action = (a) =>
-                        {
-                            OpenOverviewWindow();
-                        }
-                    };
-
-                    // Fullscreen can't open Playnite's native plugin-settings dialog
-                    // (OpenSettingsView is a no-op there), so host the plugin's settings UI in a
-                    // managed popout instead — giving fullscreen access to the notification
-                    // appearance editor and fire-tests. Closing the window saves.
-                    yield return new MainMenuItem
-                    {
-                        Description = ResourceProvider.GetString("LOCPlayAch_Landing_OpenSettings"),
-                        MenuSection = PluginMainMenuSection,
-                        Action = (a) =>
-                        {
-                            OpenSettingsWindow();
-                        }
-                    };
-
-                    yield return new MainMenuItem
-                    {
-                        Description = "-",
-                        MenuSection = PluginMainMenuSection
-                    };
-                }
+                    Description = "-",
+                    MenuSection = PluginMainMenuSection
+                };
 
                 yield return new MainMenuItem
                 {
