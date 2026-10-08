@@ -145,6 +145,8 @@ namespace PlayniteAchievements.Services.UI
         private EventHandler _activeSlideTick;
         // Starts the clock of a slide held at its start for a DWM reveal (RevealAtMotionStart).
         private Action _releaseHeldSlide;
+        // Set while a DWM-composed wave's entrance is held at its start ahead of the reveal.
+        private bool _activeEntranceBegun;
         // The running slide's frame bookkeeping, direction and requested duration, kept out of the tick
         // closure so the one diagnostic line each slide emits can be written from either exit: the slide
         // is routinely force-stopped (the post-slide snap, teardown) before its final frame runs.
@@ -2707,6 +2709,11 @@ namespace PlayniteAchievements.Services.UI
                         return;
                     }
 
+                    // The entrance is put into its held start before the card first draws, so the
+                    // card is never drawn at rest before the reveal and the warm-up renders it where
+                    // the motion begins. In Playnite, DWM was recorded showing a warm-up frame of the
+                    // card at rest at the uncloak, whatever the cloaked frames after it held.
+                    BeginEntrance(window, holdAtStart: true);
                     slideHost.Visibility = Visibility.Visible;
                 }
 
@@ -3077,6 +3084,7 @@ namespace PlayniteAchievements.Services.UI
                 _activeIsGame = false;
                 _activeSuppressZOrder = false;
                 _activeDwmComposed = false;
+                _activeEntranceBegun = false;
                 _activeMonitorScale = 1.0;
 
                 try
@@ -4245,21 +4253,40 @@ namespace PlayniteAchievements.Services.UI
                 window.Opacity = 1;
             }
 
+            // A DWM-composed window is revealed by uncloaking, which DWM applies at once to whatever
+            // the window last presented, while WPF presents on its own render thread. So its
+            // entrance began held at its start before the warm-up (BeginEntrance), and its clock
+            // only runs once the window is uncloaked. Opacity on a layered window changes in the
+            // same render as the motion and needs no hold.
+            if (reveal && _activeDwmComposed)
+            {
+                if (!_activeEntranceBegun)
+                {
+                    BeginEntrance(window, holdAtStart: true);
+                }
+
+                _activeEntranceBegun = false;
+                return RevealAtMotionStart(window);
+            }
+
+            BeginEntrance(window, holdAtStart: false);
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Places the window and starts the entrance, optionally held at its start until
+        /// <see cref="_releaseHeldSlide"/> runs.
+        /// </summary>
+        private void BeginEntrance(Window window, bool holdAtStart)
+        {
             // The window is already at the resting corner and stays there for the whole slide; only the
             // card moves. Place once here so the slide starts from a settled position.
             PlaceWindow(window);
+            _activeEntranceBegun = holdAtStart;
 
-            // A DWM-composed window is revealed by uncloaking, which DWM applies at once to whatever
-            // the window last presented, while WPF presents on its own render thread. Uncloaked with
-            // the slide, the first visible frame could still be the warm-up's: the card at rest, then
-            // jumping to the motion's start. So the motion begins held at its start while the window
-            // is cloaked, and its clock only runs once that start has been presented and the window
-            // uncloaked. Opacity on a layered window changes in the same render as the motion and
-            // needs no hold.
-            var holdForReveal = reveal && _activeDwmComposed;
             if (_activeMotionPlan != null)
             {
-                RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in", holdForReveal);
+                RunStyleMotion(window, _activeMotionPlan.Entrance, entering: true, _activeSlideInMs, "in", holdAtStart);
             }
             else
             {
@@ -4267,10 +4294,8 @@ namespace PlayniteAchievements.Services.UI
                 var from = SlideFromBottom() ? distance : -distance;
                 RunSlideStoryboard(
                     _activeSlideInStoryboard, from, 0d, DefaultSlideInEase, _activeSlideInMs,
-                    _activeSlideInTravels, "in", holdForReveal);
+                    _activeSlideInTravels, "in", holdAtStart);
             }
-
-            return holdForReveal ? RevealAtMotionStart(window) : Task.CompletedTask;
         }
 
         /// <summary>
