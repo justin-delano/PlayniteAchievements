@@ -23,25 +23,18 @@ namespace PlayniteAchievements.Views.Showcase
         private readonly ShowcaseWidgetInstanceSettings _settings;
         private readonly Action _persist;
         private readonly bool _publishChanges;
-        private readonly bool _showControlBarOption;
         private DebouncedSettingsPersist _gridOptionsPersist;
 
-        /// <param name="showControlBarOption">
-        /// False for widgets whose filters come from their host (the overview's mini-showcase),
-        /// which therefore never show a control bar of their own.
-        /// </param>
         public ShowcaseWidgetOptionsControl(
             ShowcaseWidgetInstanceSettings settings,
             Action persist = null,
             bool publishChanges = true,
             Thickness? margin = null,
-            bool loadStyles = true,
-            bool showControlBarOption = true)
+            bool loadStyles = true)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _persist = persist;
             _publishChanges = publishChanges;
-            _showControlBarOption = showControlBarOption;
             if (loadStyles)
             {
                 Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -202,15 +195,11 @@ namespace PlayniteAchievements.Views.Showcase
                         ShowcaseWidgetOptions.GetPieSmallSliceMode(_settings),
                         value => ShowcaseWidgetOptions.SetPieSmallSliceMode(_settings, value),
                         SmallSliceModeName);
-                    if (_showControlBarOption)
-                    {
-                        AddToggle(
-                            panel,
-                            Localize("LOCPlayAch_Settings_ShowGridControlBar"),
-                            ShowcaseWidgetOptions.GetPieShowControlBar(_settings),
-                            value => ShowcaseWidgetOptions.SetPieShowControlBar(_settings, value));
-                    }
-
+                    AddToggle(
+                        panel,
+                        Localize("LOCPlayAch_Settings_ShowGridControlBar"),
+                        ShowcaseWidgetOptions.GetPieShowControlBar(_settings),
+                        value => ShowcaseWidgetOptions.SetPieShowControlBar(_settings, value));
                     break;
                 case ShowcaseWidgetKind.Timeline:
                     AddRangeChoice(panel);
