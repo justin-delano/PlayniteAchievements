@@ -228,7 +228,10 @@ namespace PlayniteAchievements.Services.Achievements
                 return;
             }
 
+            // The whole-game capstone goes last: its crossing is the one that finishes the game,
+            // so it is the one the monitor flags as the completing unlock.
             var events = announce
+                .OrderBy(definition => definition.IsWholeGameAutoCapstone ? 1 : 0)
                 .Select(definition => BuildUnlockEvent(gameId, definition, gameData))
                 .ToList();
             if (DefersAnnouncements?.Invoke(gameId) == true)
