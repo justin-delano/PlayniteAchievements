@@ -1653,9 +1653,6 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">Cover image</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">Optional, for example the game's banner art</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">The cover image must be 5 MB or smaller.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_WorkshopIndexUrl">Workshop index URL</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_WorkshopServiceUrl">Workshop submission service URL</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_WorkshopHint">Leave both blank to use the official Workshop. Point them at a fork or a local service to test.</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->
