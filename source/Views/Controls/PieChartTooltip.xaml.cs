@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 using LiveCharts;
 using LiveCharts.Wpf;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Controls
 {
@@ -18,6 +19,7 @@ namespace PlayniteAchievements.Views.Controls
             Focusable = false;
             IsHitTestVisible = false;
             IsTabStop = false;
+            ClickThroughPopupHost.Attach(this);
         }
 
         public TooltipSelectionMode? SelectionMode { get; set; } = TooltipSelectionMode.OnlySender;
