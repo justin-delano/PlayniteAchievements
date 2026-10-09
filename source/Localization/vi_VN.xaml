@@ -12,8 +12,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Thành tựu</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Add">Thêm</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Loại trừ khỏi bản tóm tắt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Bao gồm trong bản tóm tắt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Loại trừ khỏi tóm tắt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Bao gồm trong tóm tắt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Áp dụng cho các mục được chọn</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Ascending">Tăng dần</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_All">Tất cả</sys:String>
@@ -173,7 +173,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">Bản ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Ảnh danh mục</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Dùng cho bản tóm tắt trò chơi</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Dùng cho tóm tắt trò chơi</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -285,7 +285,7 @@ Dữ liệu sẽ được nạp lại vào lần làm mới bạn bè tiếp the
 
 Hành động này sẽ xoá liên kết thủ công đồng thời xoá thời gian mở khoá của nó và dữ liệu được lưu trong bộ nhớ đệm của trò chơi này.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Xem thành tựu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ViewCaptures">Xem Bản ghi hình</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewCaptures">Xem bản ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewFriendsAchievements">Xem thành tựu của bạn bè</sys:String>
 
     <!-- ================================================================= -->
@@ -392,7 +392,7 @@ Hành động này sẽ xoá các liên kết thủ công, cột mốc, biểu t
 
 Thành tựu của trò chơi này đến từ một liên kết thủ công, vì vậy việc làm sạch sẽ xoá liên kết cùng với các thành tựu do liên kết đó tạo ra, cũng như các cột mốc, biểu tượng tùy chỉnh, giao diện thông báo, thứ tự sắp xếp, danh mục, loại trừ và các ghi đè nền tảng của trò chơi này. Hành động này không thể hoàn tác.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHeader">Dữ liệu tuỳ chỉnh</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHint">Xuất hoặc nhập dữ liệu tùy chỉnh của trò chơi này dưới dạng tệp .PA, bao gồm cả hình ảnh tùy chỉnh, hoặc xóa dữ liệu đó. Không bao gồm làm mới và loại trừ khỏi bảng tóm tắt.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_CustomDataHint">Xuất hoặc nhập dữ liệu tùy chỉnh của trò chơi này dưới dạng tệp .PA, bao gồm cả hình ảnh tùy chỉnh, hoặc xóa dữ liệu đó. Không bao gồm làm mới và loại trừ khỏi tóm tắt.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader">Loại trừ trò chơi</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExclusionHint">Loại trừ trò chơi này khỏi danh sách theo dõi hoặc đưa trò chơi vào lại.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ExophaseEnrichmentHeader">Slug Độ hiếm Exophase</sys:String>
@@ -429,7 +429,7 @@ Thành tựu của trò chơi này đến từ một liên kết thủ công, v�
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Trò chơi Battle.net</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Nhập giá trị cho mục ghi đè này.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Chọn một trò chơi hợp lệ cho mục ghi đè này.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Loại trừ khỏi bản tóm tắt</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Loại trừ tóm tắt</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Loại trò chơi này khỏi dữ liệu tổng quan và bản tóm tắt tất cả trò chơi.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Cột mốc hiện tại: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Cột mốc danh mục hiện tại: {0}</sys:String>
@@ -1338,11 +1338,11 @@ Hành động này sẽ xoá dữ liệu trong bộ nhớ đệm cho {0:N0} trò
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Thông báo</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Động bộ và Cập nhật</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Timeline">Thành tựu toàn thời gian</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_14D">14N</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_1M">1Th</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_14D">14Ng</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_1M">1Thg</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_1Y">1N</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_3M">3Th</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_6M">6Th</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_3M">3Thg</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_6M">6Thg</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_7D">7Ng</sys:String>
     <sys:String x:Key="LOCPlayAch_Timeline_NoUnlocksInPeriod">Không có lần mở khóa nào trong khoảng thời gian này</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_HoursMinutes">{0}g{1}p</sys:String>
