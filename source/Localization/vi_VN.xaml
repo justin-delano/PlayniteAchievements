@@ -430,7 +430,7 @@ Thành tựu của trò chơi này đến từ một liên kết thủ công, v�
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Nhập giá trị cho mục ghi đè này.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Chọn một trò chơi hợp lệ cho mục ghi đè này.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Loại trừ tóm tắt</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Loại trò chơi này khỏi dữ liệu tổng quan và bản tóm tắt tất cả trò chơi.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Loại trò chơi này khỏi dữ liệu tổng quan và tóm tắt tất cả trò chơi.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Cột mốc hiện tại: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Cột mốc danh mục hiện tại: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">Cột mốc trò chơi hiện tại: {0}</sys:String>
@@ -446,7 +446,7 @@ Thành tựu của trò chơi này đến từ một liên kết thủ công, v�
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Provider">Nền tảng</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_Excluded">Đã loại trừ</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_ExcludedFromRefreshes">Đã loại khỏi làm mới hàng loạt</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries">Đã loại trừ khỏi bản tóm tắt</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries">Đã loại trừ khỏi tóm tắt</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_AchievementOrder">Thứ tự</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">Danh mục</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Custom">Tuỳ chỉnh</sys:String>
@@ -1232,7 +1232,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Chưa bắt đầu</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Có lần mở khóa gần nhất</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">Không có lần mở khóa gần nhất</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Bản tóm tắt trò chơi</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Tóm tắt trò chơi</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Hoàn thành</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Chưa hoàn thành</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">Chưa chọn trò chơi nào trong phần tổng quan.</sys:String>
@@ -1240,7 +1240,7 @@ Các tệp sẽ được ghi đè trực tiếp và thao tác này không thể 
     <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Thành tựu theo độ hiếm</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Thành tựu theo cúp</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Tổng quan Bạn bè</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Bản tóm tắt bạn bè</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Tóm tắt bạn bè</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Tìm kiếm Bạn bè</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_AllProviders">Toàn bộ nền tảng</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearSelection">Làm sạch lựa chọn</sys:String>
