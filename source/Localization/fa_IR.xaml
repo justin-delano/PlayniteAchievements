@@ -27,6 +27,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Resume">Resume</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Fullscreen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">پنهان سازی</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Include">Include</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Exclude">Exclude</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart -->
     <sys:String x:Key="LOCPlayAch_Granularity_Day">Day</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Week">Week</sys:String>
