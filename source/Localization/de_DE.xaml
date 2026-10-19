@@ -27,6 +27,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Resume">Fortsetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Vollbild</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Ausblenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Include">Include</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Exclude">Exclude</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart -->
     <sys:String x:Key="LOCPlayAch_Granularity_Day">Tag</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Week">Woche</sys:String>
@@ -1038,7 +1040,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Filled">Ausgefüllt</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPieIcons">Diagrammsymbole anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPieLegend">Legende anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PieLegendPosition">Position der Legende</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieLegendPosition">Legendenposition</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScoreCardBadgePosition">Abzeichenposition</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScoreCardUseCustomColors">Benutzerdefinierte Seltenheitsfärbung verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScoreCardShowTotal">Gesamtpunktzahl anzeigen</sys:String>
