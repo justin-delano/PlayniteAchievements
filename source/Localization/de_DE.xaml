@@ -206,7 +206,7 @@ Hiermit werden zwischengespeicherte Erfolge, Symbole, manuelle Verknüpfungen un
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Erfolgsdaten von &quot;{0}&quot; entfernen?
 
 Hiermit werden zwischengespeicherte Erfolge, Symbole, manuelle Verknüpfungen und Freischaltzeiten gelöscht.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_DisplaySettings">Anzeigeeinstellungen ...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_DisplaySettings">Anzeigeeinstellungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">{0} ausgewählte Spiele ausschließen und zugehörige Daten entfernen?
 
 Dadurch werden die Spiele aus Erfolgsansichten ausgeschlossen und sämtliche zugehörige zwischengespeicherten Daten und manuelle Verknüpfungen werden gelöscht.</sys:String>
@@ -325,9 +325,9 @@ Achievements from the platform are loaded again afterwards. This cannot be undon
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Freischaltsymbol</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filterung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Aus Übersichten herausfiltern</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Notiz</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">Mit Notiz</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">Ohne Notiz</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Anmerkungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">Mit Anmerkungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">Ohne Anmerkungen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary_None">Keine manuelle Verknüpfung konfiguriert.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning">Manuelle Verfolgung aktivieren?
@@ -433,12 +433,12 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_WindowTitle">{0} - Erfolgsverwaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Bold">Fett</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0}/{1} Zeichen</sys:String>
-    <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Notiz bearbeiten</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Anmerkungen bearbeiten</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Italic">Kursiv</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Link">Verknüpfung</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Strikethrough">Durchgestrichen</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Underline">Unterstrichen</sys:String>
-    <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">Notiz ansehen</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">Anmerkungen ansehen</sys:String>
 
     <!-- ================================================================= -->
     <!-- 08 Manual Tracking and Linking -->
@@ -1067,8 +1067,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Seltenheitswert einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Titel über Fortschrittsleiste anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityBadgesBelowProgress">Seltenheitsabzeichen unter Fortschrittsleiste anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Segment für Gesperrte anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Handhabung kleiner Segmente</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Segment für gesperrte anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Kleine Segmente</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exakt darstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Runden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Statistik</sys:String>
