@@ -27,8 +27,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Resume">Fortsetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Vollbild</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Ausblenden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Include">Include</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Exclude">Exclude</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Include">Inklusive</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Exclude">Exklusive</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart -->
     <sys:String x:Key="LOCPlayAch_Granularity_Day">Tag</sys:String>
     <sys:String x:Key="LOCPlayAch_Granularity_Week">Woche</sys:String>
@@ -55,7 +55,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Nicht verknüpft</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Undo">Rückgängig</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unbekannt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Errungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Freigespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl freigeschaltet</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">Diese Woche</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_LastWeek">Letzte Woche</sys:String>
@@ -497,14 +497,14 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">Der Aktualisierungsfortschritt kann in der Übersicht verfolgt werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Benutzerdefinierte Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Favoriten aktualisieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Vollständige Aktualisierung</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Vollständige Aktualisierung der Freunde</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Vollständig aktualisieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Vollständig Freunde aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsCustom">Benutzerdefinierte Aktualisierung der Freunde</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsInstalled">Installierte von Freunden aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsRecent">Aktualisierung der zuletzt von Freunden gespielten</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsSelectedGame">Aktualisierung der ausgewählten von Freunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsShared">Aktualisierung der gemeinsamen von Freunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Aktualisierung der installierten</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsShared">Gemeinsame von Freunden aktualisieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Installierte aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Fehlende aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Letztgespielte aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Ausgewählte aktualisieren</sys:String>
@@ -849,7 +849,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">Pixel (leer = unbegrenzt)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Höhe der Zeilen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Anzahl der Zeilen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Ausrichtung der Spaltenüberschrift</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Ausrichtung der Spaltenüberschriften</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Horizontale Zellenausrichtung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Vertikale Zellenausrichtung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Zentriert</sys:String>
@@ -1197,7 +1197,7 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">Design migrieren</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationCustom">Benutzerdefinierte Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Vollständige Migration</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Begrenzte Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Eingegrenzte Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">Traditionell</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">Keine Designs mit Sicherungen zum Wiederherstellen gefunden.</sys:String>
@@ -1426,7 +1426,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedalMode_Trophy">Trophäenstufen</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileFullBleed">Hintergrund in voller Größe</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileLayout_Stacked">Gestapelt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinks">Profil-Links</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinks">Profilverknüpfungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Provider">Verteilung nach Anbieter</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Rarity">Verteilung nach Seltenheit</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Trophy">Verteilung nach Trophäen</sys:String>
