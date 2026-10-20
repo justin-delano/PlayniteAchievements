@@ -1467,9 +1467,9 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_Less">Weniger</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_More">Mehr</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_TrackedGames">Verfolgte</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_PlayedGames">Gespielte</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Vervollständigte</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_TrackedGames">Verfolgt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_PlayedGames">Gespielt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Komplettiert</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">Erfolge/aktiver Tag</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">30-Tage-Rate</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Durchschnittliche globale Freischaltung</sys:String>
