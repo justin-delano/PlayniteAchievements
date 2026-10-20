@@ -23,11 +23,11 @@
     <sys:String x:Key="LOCPlayAch_Common_Desktop">Chế độ cửa sổ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Duplicate">Trùng lặp</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Edit">Chỉnh sửa</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Pause">Pause</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Resume">Resume</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Pause">Tạm dừng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Resume">Tiếp tục</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Toàn màn hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Ẩn</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Include">Include</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Include">Bao gồm</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Exclude">Exclude</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart -->
     <sys:String x:Key="LOCPlayAch_Granularity_Day">Ngày</sys:String>
