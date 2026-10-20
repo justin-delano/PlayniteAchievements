@@ -305,24 +305,24 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportCreatedCategories">Erstellte Kategorien: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportIgnoredColumns">Ignorierte Spalten: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSkippedValues">{0} values were skipped because those achievements don't allow editing them.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSummary">Imported {0} rows ({1} added, {2} updated).</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_LockedIcon">Locked Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSummary">{0} Zeilen importiert ({1} hinzugefügt, {2} aktualisiert).</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_LockedIcon">Sperrsymbol</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NewAchievementName">Neuer Erfolg {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoImportRows">No importable achievements were found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoImportRows">Keine importierbaren Erfolge gefunden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoSelection">Select a custom achievement row.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Gesamtfortschritt</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">Angepasste Plattform</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete &quot;{0}&quot;? {1} other game(s) use this platform and will show as Custom.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">Changes to this platform apply to every game assigned to it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">Änderungen an dieser Plattform wirken sich auf alle ihr zugewiesenen Spiele aus.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">Gültige Hexadezimalfarbe eingeben (z.B. #FF652C).</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">Neue Plattform</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">This file could not be read as an SVG image.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">Diese Datei konnte nicht als SVG-Bild eingelesen werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes">No drawable shapes were found in this SVG file.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ResetConfirm">Reset all achievement customization for this game?
 
 Achievements from the platform are loaded again afterwards. This cannot be undone.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ResetHint">Delete every customization for this game and load the platform's achievements again.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Unlocked Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_UnlockedIcon">Freischaltsymbol</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filterung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Aus Übersichten herausfiltern</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Notiz</sys:String>
@@ -365,7 +365,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings">Durch Einstellungen aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox">Immer separate Sperrsymbole für dieses Spiel verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader">Separate Sperrsymbole</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Download separate locked icons for this game when the platform provides them. Unchecked, the global setting applies.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Separate Symbole für gesperrte Erfolge herunterladen, sofern von der Plattform unterstützt. Ohne Auswahl wird die globale Einstellung angewendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHeader">Plattformübersteuerung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHint">Erzwingt die Verwendung einer bestimmten unterstützen Plattform oder entfernt die Übersteuerung für einen automatischen Abgleich.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto">Übersteuerung gesetzt: {0} (automatische Erkennung)</sys:String>
@@ -380,7 +380,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Communication ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Vita3K">Vita3K Title ID oder NP Communication ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Minecraft">Minecraft Folder, Instance or World Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Minecraft">Minecraft-Ordner, Instanz oder World-Ordner</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase Game ID oder Slug</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic">Epic Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG">GOG Product ID</sys:String>
@@ -392,10 +392,10 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Blizzard-Spiel</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Wert für Übersteuerung eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Gültiges Spiel für die Übersteuerung auswählen.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Current category capstone: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">Current game capstone: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">Which category should this capstone stand for?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_Replaces">Replaces {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Aktueller Vollendungserfolg der Kategorie: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">Aktueller Vollendungserfolg des Spiels: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">Für welche Kategorie soll dieser Vollendungserfolg gelten?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Replaces">Ersetzt {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Categorized">Kategorisiert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">Vervollständigung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_GameId">Playnite Game ID</sys:String>
@@ -417,8 +417,8 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">Symbole</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Editor">Editor</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Goal">Ziel</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Revert">Revert</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertHint">Discard your changes to the selected achievements and show the provider's values again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Revert">Widerrufen</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertHint">Die Änderungen an den ausgewählten Erfolgen widerrufen und wieder die Anbieterwerte anzeigen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertConfirmSingle">Revert &quot;{0}&quot; to the provider's values?</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertConfirmSelected">Revert {0} achievements to the provider's values?</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_BulkHeader">Editing {0} achievements</sys:String>
@@ -572,8 +572,8 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">Compress friend avatars and unowned game images. Most of these are already small.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">Maximale Bildgröße:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">No cached images are larger than {0} px.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Compressing cached images... ({0}/{1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Scanning cached images... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Komprimiere zwischengespeicherte Bilder ... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Scanne zwischengespeicherte Bilder ... ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">Compressed {0} images. Skipped {1}, failed {2}.
 
 Reclaimed {3}.</sys:String>
@@ -931,7 +931,7 @@ Reclaimed {1}.</sys:String>
          site's English-only button label; leave it, "FFXIV Collect", and "Lodestone" untranslated. -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CollectNote">Unlock data comes from {0}, which indexes characters on demand. Search for your character there and select Add if it is not listed yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Prüfe Charakter ...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_InvalidProfile">No character id found in the profile URL.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_InvalidProfile">Keine Character ID in Profil-URL gefunden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Charakter gefunden aber Erfolge im Lodestone auf privat gesetzt.</sys:String>
     <!-- FFXIV_NotOnCollect: "Add" is the English-only button label on ffxivcollect.com; leave it,
          the domain, "FFXIV Collect", and "Lodestone" untranslated. -->
@@ -941,7 +941,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Web-API-Schlüssel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Der Schlüssel ist in den Kontoeinstellungen von RetroAchievements einsehbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Punkteanzeige</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by rarity, so harder achievements are worth more.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio gewichtet Punkte nach Seltenheit, wodurch der Wert schwierigerer Erfolge ansteigt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Standard</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (skaliert)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">Unscharfe Namensübereinstimmung aktivieren</sys:String>
@@ -1050,7 +1050,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseTrophiesForRarity">Trophäen als Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages">Seltenheitswerte runden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Values under 1% display as &lt;1%.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Werte unterhalb 1 % werden als &quot;&lt; 1 %&quot; angezeigt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring">Vervollständigte Fortschrittsleisten einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HighlightMissable">Verfehlbare Erfolge hervorheben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HighlightMissable_Help">Show the status column lock of locked missable and unobtainable achievements in red.</sys:String>
@@ -1142,8 +1142,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unowned">Nicht in Besitz</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Ungespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_AllTime">Zeitraum</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_SinceDate">Since {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_UntilDate">Until {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_SinceDate">Von {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_UntilDate">Bis {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Sichtbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Started">Gestartet</sys:String>
@@ -1518,12 +1518,12 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_LoadFailed">The Workshop could not be loaded: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Install">Installieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Update">Aktualisieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Reinstall">Reinstall</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Reinstall">Neuinstallieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateAvailable">Aktualisierung verfügbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Installs">Installationen</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Likes">Likes</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Like">Like</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Unlike">Unlike</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Like">Like vergeben</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Unlike">Like entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents">Enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Auf GitHub öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RemoveFromWorkshop">Remove from Workshop</sys:String>
@@ -1575,7 +1575,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_NewSubmission">New submission</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Absenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">{0} hochladen ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. The Workshop updates once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Mine">Eigene</sys:String>
@@ -1583,9 +1583,9 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">Danach</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">Show unchanged achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_PackageOnly">This game is not in your library, so the package contents are shown without a comparison.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">Icons: {0} · Overrides: {1} · Categories: {2} · Capstones: {3} · Custom achievements: {4}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Your edits will be kept: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">and {0} more</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">Symbole: {0} · Übersteuerungen: {1} · Kategorien: {2} · Vollendungserfolge: {3} · Angepasste Erfolge: {4}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">Eigene Anpassungen bleiben erhalten: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">und {0} mehr</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">Rendere Vorschau ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">Cover-Grafik</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">Optional, for example the game's banner art</sys:String>
