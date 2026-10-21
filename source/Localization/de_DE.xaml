@@ -701,7 +701,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_SampleUnlock">Beispielfreischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FirePluginStyle">Plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FireTheme">Design</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_UseThemeTemplate">Vorlage des Designs verwenden (sofern verfügbar)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_UseThemeTemplate">Vorlage des Designs verwenden (wenn verfügbar)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextLines">Textzeilen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextLinesHint">Drag to reorder. A blank size uses the theme default.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontFamily">Schriftart</sys:String>
@@ -1076,7 +1076,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatische Zuweisung von Schlagworten nach Erfolgsstatus zur besseren Filterung in der Bibliothek.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Schlagwortkonfiguration</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Separate Sperrsymbole (sofern verfügbar) anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Separate Sperrsymbole (wenn verfügbar) anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Download von Sperrsymbolen der Plattform, sofern verfügbar und unterschiedlich zum Freischaltsymbol. Ansonsten werden die Freischaltsymbole in Graustufen verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole anzeigen</sys:String>
