@@ -796,7 +796,7 @@ Reclaimed {1}.</sys:String>
 
     <!-- Provider: Meta Quest -->
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Help">Log in to Meta in the browser window to read your unlocked achievements. Meta Quest achievements are tracked for games added by the Meta Quest/Oculus Library extension, or for games given a manual Meta app ID in Manage Achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Meta_Note">Note: Meta records the day an achievement was unlocked but not the time, and publishes no completion rates, so Meta Quest achievements show no unlock time and no rarity.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Meta_Note">注：Metaでは、実績の解除日は記録されますが、解除時刻は記録されず、達成率も公開されていないため、Meta Questの実績には解除時刻やレア度は表示されません。</sys:String>
 
     <!-- Provider: Exophase -->
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">有効にすると、Exophase は管理対象のプラットフォーム上のゲームの実績を自動的にトラッキングします。</sys:String>
@@ -1382,7 +1382,7 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_CollectionNameInvalid">Enter a unique, non-empty collection name.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_RemoveFromCollection">コレクションから削除</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoPinnedAchievements">Pin achievements to see them here.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_NoFavoriteGames">Pin games or use Playnite favorites.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NoFavoriteGames">ゲームをピン留めするか、Playniteのお気に入り機能を利用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoImage">Choose an image in the widget settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoText">Add text in the widget settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoData">No data yet</sys:String>
@@ -1464,9 +1464,9 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Completions</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">Unlocks / active day</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">30-day rate</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average global unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CurrentStreak">Current streak</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_LongestStreak">Longest streak</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">世界平均のロック解除率</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CurrentStreak">現在の連続日数</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_LongestStreak">最長連続日数</sys:String>
 
 
     <sys:String x:Key="LOCPlayAch_Showcase_NoScreenshots">No achievement screenshots found</sys:String>
