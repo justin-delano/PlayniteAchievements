@@ -143,7 +143,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">Ảnh chụp màn hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Ghi hình</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">Bản ghi hình</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Hình minh hoạ danh mục</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Ảnh danh mục</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Dùng cho trò chơi</sys:String>
 
     <!-- ================================================================= -->
