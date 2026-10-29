@@ -144,7 +144,7 @@
     <sys:String x:Key="LOCPlayAch_Common_General">Allgemein</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Height">Höhe</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Import">Importieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_LastPlayed">Zuletzt gespielt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_LastPlayed">Gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Library">Bibliothek</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_GroupBy">Gruppierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Ascending">Aufsteigend</sys:String>
