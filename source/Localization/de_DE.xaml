@@ -56,7 +56,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Nicht verknüpft</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Undo">Rückgängig</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unbekannt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Freigespielt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Errungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl freigeschaltet</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_DaysAgo">Vor {0} Tagen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneWeekAgo">Vor 1 Woche</sys:String>
@@ -88,7 +88,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Collection">Sammelwertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Stufe {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} Punkte</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestigewertung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Gamerscore">Gamerscore</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_EpicXp">Epic XP</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_RetroPoints">RetroAchievements - Punkte</sys:String>
@@ -99,7 +99,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} bis {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Wertungssystem</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Die Sammelwertung belohnt das generelle Freischalten von Erfolgen. Jede Freischaltung gewährt eine feste Punktzahl, basierend auf dem Seltenheitsrang.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Die Prestigewertung belohnt das Freischalten seltener Erfolge. Diese sind erheblich mehr Punkte wert als gewöhnliche.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige belohnt das Freischalten seltener Erfolge. Diese sind erheblich mehr Punkte wert als gewöhnliche.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Stufen und Ränge</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier. Reaching level 250 earns a Mastery and starts the tiers again from Bronze V, while your level and total score keep counting.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PlatformBody">Points cards add up each platform's own points: Gamerscore (Xbox and Xenia games), Epic XP, RetroAchievements Points (hardcore unlocks), PlayStation Points (PSN, RPCS3, ShadPS4 and Vita3K games) and one card for each other platform. Each card shows the points earned out of the points its games hold, with no tiers or levels. Manage Achievements can send a game's points to another card.</sys:String>
