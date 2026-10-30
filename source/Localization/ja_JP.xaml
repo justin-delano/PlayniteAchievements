@@ -5,7 +5,7 @@
     <!-- 01 Plugin Titles -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite 実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite Achievements Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite Achievementsの更新</sys:String>
 
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
@@ -27,7 +27,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Desktop">デスクトップ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Duplicate">複製</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Edit">編集</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Pause">Pause</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Pause">一時停止</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Resume">Resume</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Fullscreen">フルスクリーン</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">非表示</sys:String>
@@ -326,16 +326,16 @@ This hides the game from the achievements view and deletes its cached data and m
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSingle">Delete &quot;{0}&quot;? {1} achievement(s) will move back to the Default category.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">Filter by Category Label</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Tags">Filter by Tag</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_FilterScopeTooltip">Apply a filter to every achievement in this category. Subcategories keep their own. Shows blank when they differ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_FilterScopeTooltip">カテゴリー内のすべての実績にフィルターを適用します。サブカテゴリーは独自のフィルターを維持します。異なる内容が含まれている場合は空白で表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Category label for selected achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Indent">Make subcategory of the category above</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Outdent">Move out one level</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">Category names cannot contain &quot;::&quot;. Use the arrow buttons or the right-click menu to make a category a subcategory of another.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">カテゴリ名には「::」を含めることはできません。カテゴリを別のカテゴリのサブカテゴリにするには、矢印ボタンまたは右クリックメニューを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">カテゴリー名の変更、カテゴリー画像の選択、ドラッグによる並べ替えを行います。カテゴリーを別のカテゴリーの中央にドロップするとサブカテゴリーにでき、行を右クリックするとその他の操作が表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Merge into</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Merge this category into another, moving its achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新規カテゴリー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game grids. Click again to clear.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">ゲーム概要グリッドでのこのゲームの画像として、このカテゴリーの画像を使用します。もう一度クリックすると削除されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">Base</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">Challenge</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">Collectable</sys:String>
@@ -347,7 +347,7 @@ This hides the game from the achievements view and deletes its cached data and m
     <sys:String x:Key="LOCPlayAch_AchievementTag_Miscellaneous">Miscellaneous</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Missable">Missable</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Multiplayer">Multiplayer</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_PostGame">Post Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_PostGame">試合後</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Progression">Progression</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_SideQuest">Side Quest</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Singleplayer">Singleplayer</sys:String>
@@ -714,7 +714,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FrameHeader">Frame</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ToastTab">通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_Customize">Style &quot;{0}&quot; notifications separately</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">Reset to shared style</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">共有スタイルにリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_StopSeparateConfirm">これらの通知の個別スタイリングを停止しますか? 個別のスタイルと画像は削除されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Sounds_Customize">「{0}」 で個別のサウンドを使用する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Sounds_StopSeparateConfirm">ここでの個別サウンドの使用を停止しますか? これらの解除音は再び継承されたサウンドを再生するようになります。</sys:String>
@@ -1807,26 +1807,26 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_RequireExophaseAuth_Description">有効にすると、手動リンク時に Exophase のサインインが使用され、ローカライズされた実績テキストを取得できます。無効にすると、サインインは不要になりますが、テキストが英語のみになる可能性があります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPieLegend">Show Pie Legend</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories">SteamHunters Categories</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">Categories and Base/DLC types come from Steam's achievement sets. Merge keeps those and fills the rest from SteamHunters, Override uses SteamHunters for every achievement, Off uses Steam's sets only. Category art defaults to Steam store banners (changeable per game in Manage Achievements).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">Steam の更新時に SteamHunters から実績カテゴリーおよび本体/DLC タイプを補完します。カテゴリーのアートはデフォルトで Steam ストアのバナーになります（「実績の管理」でゲームごとに変更可能）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Override">Override</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Tag Configuration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">Fills missing achievement metadata from Exophase while keeping native achievement data. Requires an Exophase sign-in.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_Pinned">Pinned collection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Pinned">Pinned games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Pinned">ピン留めしたゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_HideCompleted">Hide completed games</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Capstones">Capstone achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Pinned">Pinned achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Rarest">Rarest achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_Recent">Recent achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NewCollection">新規コレクション…</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Provider">Provider distribution</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Provider">プロバイダー分布</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Rarity">Rarity distribution</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PieMode_Trophy">Trophy distribution</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PinToShowcase">Pin to Showcase</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PinToShowcase">ショーケースにピン留め</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Profile_DefaultName">実績ショーケース</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileProviderHint">Leave blank to use your provider profile</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileProviderHint">空のままにすると、プロバイダーのプロフィールを使用します</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_SlideshowSource_All">すべてのキャプチャ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Timeline_SplitByPlatform">Split by platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_Timeline_SplitByPlatform">プラットフォーム別区分</sys:String>
 
 </ResourceDictionary>
