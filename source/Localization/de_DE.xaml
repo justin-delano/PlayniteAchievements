@@ -518,7 +518,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Such nach Spiel zur Erfolgsverknüpfung. Die Erfolge des gewählten Spiels werden mit diesem Playnite-Spiel verknüpft.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">Keine Spiele gefunden. Versuche einen anderen Suchbegriff.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} Spiel(e) gefunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">Page link or ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">Seiten-URL oder ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Manueller Import von Verknüpfungen aus SuccessStory. Der Import ist additiv und überschreibt keine existierenden Verknüpfungen oder zwischengespeicherten Plattformdaten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Manueller SuccessStory-Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Manuelle Verknüpfungen aus SuccessStory importieren</sys:String>
