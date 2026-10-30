@@ -4,63 +4,63 @@
     <!-- ================================================================= -->
     <!-- 01 Plugin Titles -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite Achievements Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_PluginName">Conquistas Playnite</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Refresh">Recarregar Conquistas Playnite</sys:String>
 
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_AddNamed">Add &quot;{0}&quot;</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_SearchOrAdd">Search or Add</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Check">Check</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Continue">Continue</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Color">Color</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ChooseIcon">Choose Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements">Conquistas</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Excluir de resumos</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Incluir em resumos</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_AddNamed">Adicionar &quot;{0}&quot;</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_SearchOrAdd">Buscar ou Adicionar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Check">Verificar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Continue">Continuar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparente</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Color">Cor</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ChooseIcon">Escolher Ícone</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_BuiltInTagHint">Built-in tag: it can be renamed and recolored, but not deleted.</sys:String>
     <!-- Kind: what part of a game a category covers (Base, DLC, Update, Subset) -->
-    <sys:String x:Key="LOCPlayAch_Common_Delete">Delete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Delete">Deletar</sys:String>
     <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
-    <sys:String x:Key="LOCPlayAch_Common_Desktop">Desktop</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Duplicate">Duplicate</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Edit">Edit</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Pause">Pause</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Resume">Resume</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Fullscreen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Hide">Hide</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Include">Include</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Exclude">Exclude</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Desktop">Área de Trabalho</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Duplicate">Duplicar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Edit">Editar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Pause">Pausar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Resume">Retomar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Fullscreen">Tela cheia</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Hide">Esconder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Include">Incluir</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Exclude">Excluir</sys:String>
     <!-- Granularity: bar width of the unlocks-over-time chart -->
-    <sys:String x:Key="LOCPlayAch_Granularity_Day">Day</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Week">Week</sys:String>
-    <sys:String x:Key="LOCPlayAch_Granularity_Month">Month</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Level">Level</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Playtime</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Day">Dia</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Week">Semana</sys:String>
+    <sys:String x:Key="LOCPlayAch_Granularity_Month">Mês</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Level">Nível</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Tempo de jogo</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastUnlock">Last Unlock</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Locked">Locked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Merge">Merge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Locked">Trancado</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Merge">Mesclar</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">No cached achievements are available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Not authenticated</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Conquistas não encontradas</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Não autenticado</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Preview">Preview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Redo">Redo</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Reorder">Reorder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Redo">Refazer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Reorder">Reordenar</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectedCountFormat">{0:N0} selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Linked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Both">Both</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Both">Ambos</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Not linked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Undo">Undo</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unknown">Unknown</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Undo">Desfazer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unknown">Desconhecido</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Destravado</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Unlocked Count</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_DaysAgo">{0} days ago</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_OneWeekAgo">1 week ago</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_WeeksAgo">{0} weeks ago</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_DaysAgo">Há {0} dias</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_OneWeekAgo">Há 1 semana</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_WeeksAgo">Há {0} semanas</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneMonthAgo">1 month ago</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_MonthsAgo">{0} months ago</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 year ago</sys:String>
