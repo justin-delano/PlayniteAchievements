@@ -20,7 +20,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Color">Farbe</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ChooseIcon">Symbol auswählen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_BuiltInTagHint">Built-in tag: it can be renamed and recolored, but not deleted.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_BuiltInTagHint">Integriertes Schlagwort: Kann umbenannt und gefärbt, jedoch nicht gelöscht werden.</sys:String>
     <!-- Kind: what part of a game a category covers (Base, DLC, Update, Subset) -->
     <sys:String x:Key="LOCPlayAch_Common_Delete">Löschen</sys:String>
     <!-- Common_Desktop / Common_Fullscreen: bare names of Playnite's two modes (and their themes) -->
@@ -126,7 +126,7 @@
     <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">Vollendungsstatus</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Configure">Konfigurieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Copy">Kopieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Custom">Angepasst</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Standard</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Alle abwählen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Disabled">Deaktiviert</sys:String>
@@ -478,7 +478,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">Cover statt Symbole für fehlende Grafiken anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">Symbole</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Editor">Editor</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_MakeGlobal">Make Global</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_MakeGlobal">Global hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_CombineByName">{0} other games have their own tag named &quot;{1}&quot;. Combine them into this global tag?</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_GlobalHeader">Globale Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_GameHeader">Spielschlagworte</sys:String>
@@ -674,7 +674,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableProgressToasts">Erfolgsfortschritte anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">Skip the 100% notification when a capstone completes the game</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent">Fortschrittsstaffelung (in Prozent):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">For example, 10 notifies at 10%, 20%, 30% and so on. 0 notifies on every update.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">Beispiel: 10 benachrichtigt bei 10, 20, 30, etc. Prozent. 0 benachrichtigt bei jeder Aktualisierung.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Fallback-Intervall (in Sekunden):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollRefreshFriends">Freundesdaten zum laufenden Spiel abfragen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Freundesdaten bei jeder N. Abfrage abrufen:</sys:String>
@@ -1312,7 +1312,7 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <!-- Former name of the Platform Achievements tag; read only to rename tags still called by it. -->
     <sys:String x:Key="LOCPlayAch_Tagging_HasAchievements">Erfolge verfügbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_PlatformAchievements">Plattformerfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_CustomAchievements">Custom Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_CustomAchievements">Angepasste Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_NoAchievements">Keine Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Customized">Angepasst</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_NotCustomized">Nicht angepasst</sys:String>
@@ -1330,22 +1330,22 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
          No = from no source. -->
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformIcons">Platform Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataIcons">Metadata Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomIcons">Custom Icons</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomIcons">Angepasste Symbole</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoIcons">Keine Symbole</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformTrophies">Platform Trophies</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataTrophies">Metadata Trophies</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomTrophies">Custom Trophies</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomTrophies">Angepasste Trophäen</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoTrophies">No Trophies</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformPoints">Platform Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataPoints">Metadata Points</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomPoints">Custom Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomPoints">Angepasste Punkte</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoPoints">No Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformText">Platform Text</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataText">Metadata Text</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomText">Custom Text</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomText">Angepasste Texte</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformCategories">Platform Categories</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataCategories">Metadata Categories</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCategories">Custom Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCategories">Angepasste Kategorien</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoCategories">No Categories</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformTags">Plattformschlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataTags">Metadatenschlagworte</sys:String>
@@ -1353,17 +1353,17 @@ Daten für in Besitz befindliche Spiele bleiben erhalten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoTags">Keine Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformCapstones">Platform Capstones</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataCapstones">Metadata Capstones</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCapstones">Custom Capstones</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCapstones">Angepasste Vollendungserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoCapstones">No Capstones</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomNotes">Custom Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomNotes">Angepasste Anmerkungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoNotes">No Notes</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomOrder">Custom Order</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomOrder">Angepasste Reihenfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformOrder">Platform Order</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomGoals">Custom Goals</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomGoals">Angepasste Ziele</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoGoals">No Goals</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomNotifications">Custom Notifications</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomSource">Source Override</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomManualTracking">Manual Tracking</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomNotifications">Angepasste Benachrichtigungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomSource">Übersteuerte Quelle</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomManualTracking">Manuelle Verfolgung</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Alle Schlagworte von Playnite Achievements von sämtlichen Spielen entfernen?</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Entferne Schlagworte ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Synchronisiere Schlagworte ...</sys:String>
@@ -1715,12 +1715,12 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">Optional, for example the game's banner art</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">Das Cover-Bild darf nicht größer als 5 MB sein.</sys:String>
     <!-- Labels of a Workshop item's contents summary, each followed by its count. -->
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">Custom achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">Angepasste Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_Overrides">Übersteuerungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_Widgets">Widgets</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_Images">Bilder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomTemplate">Custom template</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomFrameTemplate">Custom frame template</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomTemplate">Angepasste Vorlage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomFrameTemplate">Angepasste Rahmenvorlage</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_KindStyles">Per-kind styles</sys:String>
 
     <!-- ================================================================= -->
