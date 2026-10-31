@@ -294,7 +294,7 @@ This hides the game from the achievements view and deletes its cached data and m
     <sys:String x:Key="LOCPlayAch_Menu_Filters">フィルター</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">実績の管理</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">更新に含める</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">「更新」および「選択したゲームを更新」に含める</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">実績の概要</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">フレンドを無視</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">フレンドの無視を解除</sys:String>
@@ -452,7 +452,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Select a valid game for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">Current category capstone: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">Current game capstone: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">Which category should this capstone stand for?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">このキャップストーンはどのカテゴリーに分類すべきでしょうか？</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Replaces">Replaces {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Categorized">分類</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">達成率</sys:String>
@@ -844,7 +844,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">クライアントシークレット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URI</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_AggregateAccountCharacters">Combine achievements from every character on the account</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">Reading WoW achievements uses Blizzard's official API, which needs a free API client tied to your Battle.net account. You only have to set this up once:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">WoWの達成実績を読み込むには、Blizzardの公式APIを使用します。これには、Battle.netアカウントに紐付けられた無料のAPIクライアントが必要です。設定は一度行えば済みます：</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1">1. {0} を開き、新規クライアントを作成してください（名前や詳細は任意で構いません）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. Set the client's Redirect URI to exactly the value shown below (default http://127.0.0.1:55431/).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. Copy the client's Client ID and Client Secret into the fields below.</sys:String>
@@ -1198,7 +1198,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Authenticated">認証済み</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_AuthenticatedAs">{0} として認証済み</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">認証を確認中...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Waiting for check</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_NotChecked">未認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">認証チェックに失敗しました。再試行してください。</sys:String>
 
     <!-- ================================================================= -->
