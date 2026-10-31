@@ -44,7 +44,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Merge">Mesclar</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">Nenhuma conquista em cache disponível para este jogo.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Este jogo ainda não possui conquistas rastreadas. Clique no botão Atualizar para verificar os dados de conquistas.</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Este jogo pode não ter suporte a conquistas, ou as conquistas  podem não estar disponíveis para esta plataforma</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Este jogo pode não ter suporte a conquistas, ou as conquistas podem não estar disponíveis para esta plataforma.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Conquistas não encontradas</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Não autenticado</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Preview">Visualizar</sys:String>
@@ -92,7 +92,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Gamerscore">Gamerscore</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_EpicXp">Epic XP</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_RetroPoints">Pontos do RetroAchievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_ProviderPointsFormat">{0} Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_ProviderPointsFormat">{0} pontos</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_LevelInTier">Level in tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Nível máximo atingido</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_MasteryFormat">Mastery {0}</sys:String>
@@ -282,7 +282,7 @@ Isso exclui as conquistas, os ícones armazenados em cache, os vínculos manuais
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Limpar os dados de &quot;{0}&quot;?
 
 Isso exclui as conquistas, os ícones armazenados em cache, o vínculo manual e os horários de desbloqueio.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_DisplaySettings">Display Settings…</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_DisplaySettings">Configurações de Exibição…</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected games and clear their data?
 
 This hides them from the achievements view and deletes their cached data and manual links.</sys:String>
@@ -626,7 +626,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Lista compacta de bloqueadas</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Lista compacta de desbloqueadas</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Comprime os ícones de conquistas armazenados em cache. Normalmente, este é o maior grupo.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Comprime a arte padrão de categorias fornecida pelos provedores.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Comprime a arte padrão de categoria fornecida pelos provedores.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{0} de {1} imagens armazenadas em cache são maiores que {2} px.
 
 Tamanho atual: {3}
@@ -638,8 +638,8 @@ Os arquivos serão reescritos no local e isso não pode ser desfeito. Continuar?
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">Compress friend avatars and unowned game images. Most of these are already small.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">Tamanho máximo da imagem:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">Nenhuma imagem armazenada em cache é maior que {0} px.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Comprimindo imagens armazenadas em cache... ({0}/{1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Verificando imagens armazenadas em cache... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Comprimindo imagens armazenadas em cache… ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Verificando imagens armazenadas em cache… ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">{0} imagens comprimidas. {1} ignoradas, {2} com falha.
 
 Espaço recuperado: {3}.</sys:String>
@@ -830,7 +830,7 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotification">Exibir notificação novamente</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_FireTestNotificationHelp">Aciona novamente a notificação, a captura de tela e a gravação da conquista mais recentemente desbloqueada no jogo em execução.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolder">Escrever reativamentos em uma pasta de teste</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolderHelp">As capturas reativadas vão para uma subpasta compartilhada chamada &quot;Test&quot;, para que nunca apareçam junto com as capturas do próprio jogo. Ativar esta opção também permite usar o atalho de reativação quando nenhum jogo estiver em execução.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableCaptureTestFolderHelp">As capturas reativadas vão para uma subpasta compartilhada chamada &quot;Test&quot;, para que nunca apareçam com as capturas do próprio jogo. Ativar esta opção também permite usar o atalho de reativação quando nenhum jogo estiver em execução.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">Os atalhos globais funcionam fora do Playnite para teclas de função e atalhos com modificadores. Letras e dígitos simples só funcionam enquanto o Playnite estiver em foco.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Atalho global indisponível: {0}. Outro aplicativo pode já estar usando a mesma tecla.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Atalho não compatível. Pressione uma letra, um dígito, uma tecla de função ou um atalho com modificador.</sys:String>
