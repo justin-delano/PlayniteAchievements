@@ -121,7 +121,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Category">Kategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Clear">Entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Close">Schließen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_CollapseAll">Alle zuklappen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_CollapseAll">Alle reduzieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Columns">Spalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">Vollendungsstatus</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Configure">Konfigurieren</sys:String>
@@ -135,7 +135,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Right">Rechts</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Top">Oben</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Enabled">Aktiviert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ExpandAll">Alle aufklappen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ExpandAll">Alle erweitern</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddToFavorites">Zu Favoriten hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Description">Beschreibung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Details">Details</sys:String>
@@ -1133,7 +1133,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AnimateRarityGlows_Help">Gently fade rarity glows in and out on unlocked achievement icons and in unlock notifications, and slowly turn the rays.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RarityGlowPulseMinOpacity">Minimales Leuchten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RarityGlowPulseMaxOpacity">Maximales Leuchten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NameColor">Titelfärbung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NameColor">Titel einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatusColor">Statusfärbung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatusColor_MissableUnobtainable">Verfehl- und unerreichbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Seltenheitswerte einfärben</sys:String>
