@@ -40,7 +40,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Label_Level">Stufe</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Spielzeit</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastUnlock">Freischaltung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Locked">Gesperrt</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Locked">Offen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Merge">Zusammenführen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">Keine zwischengespeicherten Erfolge für dieses Spiel vorhanden.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Noch keine Erfolgsdaten verfügbar. Aktualisierung für Datenabgleich ausführen.</sys:String>
@@ -57,7 +57,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Undo">Rückgängig</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unbekannt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Errungen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl freigeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl errungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_DaysAgo">Vor {0} Tagen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneWeekAgo">Vor 1 Woche</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_WeeksAgo">Vor {0} Wochen</sys:String>
@@ -426,7 +426,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings">Durch Einstellungen aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox">Immer separate Sperrsymbole für dieses Spiel verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader">Separate Sperrsymbole</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Separate Symbole für gesperrte Erfolge herunterladen, sofern von der Plattform unterstützt. Ohne Auswahl wird die globale Einstellung angewendet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint">Separate Symbole für offene Erfolge herunterladen, sofern von der Plattform unterstützt. Ohne Auswahl wird die globale Einstellung angewendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHeader">Plattformübersteuerung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderHint">Erzwingt die Verwendung einer bestimmten unterstützen Plattform oder entfernt die Übersteuerung für einen automatischen Abgleich.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid">Unterstützte Übersteuerung der Plattform wählen.</sys:String>
@@ -586,7 +586,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentifizierung erforderlich. Aktualisierung abgebrochen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Canceled">Aktualisierung abgebrochen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Failed">Fehler: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} von {1} ({2} freigeschaltet) aus {3} Spielen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} von {1} ({2} errungen) aus {3} Spielen</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Lade Erfolgsdaten ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Keine Erfolge zwischengespeichert. Aktualisierung für Datenabgleich durchführen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Aktualisierung abgeschlossen.</sys:String>
@@ -598,7 +598,7 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Aktualisiere ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starte ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Erfolgreich</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} Erfolge ({1} freigeschaltet) aus {2} Spielen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} Erfolge ({1} errungen) aus {2} Spielen</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Aktualisiere Zwischenspeicher ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Aktualisiere {1} Erfolgsdaten: &quot;{0}&quot;</sys:String>
 
@@ -623,8 +623,8 @@ Passende Plattform aktivieren oder die Authentifizierungseinstellungen überprü
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Zwischengespeicherte Erfolgsdaten der Plattformen. Das Entfernen betrifft keine Symboldateien.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Zwischengespeicherte Erfolgsdaten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Kompakt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Kompakt - gesperrt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Kompakt - freigeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Kompakt - offen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Kompakt - errungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Zwischengespeicherte Erfolgssymbole komprimieren. Dies ist für gewöhnlich die größte Gruppe.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Standardkategoriebilder des Anbieters komprimieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{0} of {1} cached images are larger than {2} px.
@@ -780,7 +780,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">Design-Standard</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">Kopfzeilentext</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">Leave blank to use the localized default. {0} is the friend's name, or the game's name in the Game Complete! title.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Freundesfreischaltung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Freundeserrungenschaft</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100 % Vollendung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">Freundesvollendung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFormatInvalid">The friend header must include {0} for the friend's name.</sys:String>
@@ -890,7 +890,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optional: Das kopierte JSON ebenfalls in StarDB einfügen, um den StarDB Tracker synchron zu halten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Unterstützte Formate: stardb-exporter, StarDB, Paimon.moe, SEELIE.me, rng.moe JSON, sowie Star Rail Station .dat.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">Eine oder mehrere konfigurierte Exportdateien existieren nicht.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">Keine Exportdatei konfiguriert. Die Aktualisierung wird lediglich Daten gesperrter Erfolge importieren.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">Keine Exportdatei konfiguriert. Die Aktualisierung wird lediglich Daten offener Erfolge importieren.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Datenbank zur Fehleranalyse als CSV exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV exportieren</sys:String>
@@ -1104,7 +1104,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionFrame">Umrandung bei Vollendung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Spielverderber durch Freundeserfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(Verborgener Erfolg)&quot; anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf Symbolen freigeschalteter Erfolge anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf Symbolen errungener Erfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Metadaten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">Minigalerie</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Diagrammzentrum</sys:String>
@@ -1139,7 +1139,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Seltenheitswerte einfärben</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Titel über Fortschrittsleiste anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityBadgesBelowProgress">Seltenheitsabzeichen unter Fortschrittsleiste anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Segment für gesperrte anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Segment für Offene anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Kleine Segmente</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exakt darstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Runden</sys:String>
@@ -1148,7 +1148,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatische Zuweisung von Schlagworten nach Erfolgsstatus zur besseren Filterung in der Bibliothek.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Separate Sperrsymbole (wenn verfügbar) anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Download von Sperrsymbolen der Plattform, sofern verfügbar und unterschiedlich zum Freischaltsymbol. Ansonsten werden die Freischaltsymbole in Graustufen verwendet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Herunterladen von Sperrsymbolen der Plattform, sofern verfügbar und unterschiedlich zum Freischaltsymbol. Ansonsten werden die Freischaltsymbole in Graustufen verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">Element anzeigen</sys:String>
@@ -1403,11 +1403,11 @@ Plugin-Sprache übereinstimmend mit der Spracheinstellung in Steam konfigurieren
 Details sind in der Log-Datei aufgezeichnet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0}-Authentifizierung abgelaufen oder ungültig. Klicken zum Öffnen der Einstellungen.</sys:String>
     <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
-    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Erfolg freigeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Erfolg errungen</sys:String>
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">Erfolgsfortschritt</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
-    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">Freischaltung von {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">Errungenschaft von {0}</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
     <sys:String x:Key="LOCPlayAch_Toast_Congratulations">Gratulation!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
@@ -1437,9 +1437,9 @@ Details sind in der Log-Datei aufgezeichnet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">#AARRGGBB, #RRGGBB oder WPF-Farbnamen wählen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_HexLabel">Hexadezimalwert</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Farbe wählen</sys:String>
-    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Gruppierung nach Freischaltung</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Keine gesperrten Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Keine freigeschalteten Erfolge</sys:String>
+    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Gruppierung nach Errungenschaft</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Keine offenen Erfolge</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Keine errungenen Erfolge</sys:String>
     <!-- Riot_ChallengeCategory_*: the five top-level League of Legends challenge categories, which
          Riot's game data exposes only as untranslated codes -->
     <sys:String x:Key="LOCPlayAch_Riot_ChallengeCategory_Expertise">Expertise</sys:String>
@@ -1587,7 +1587,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_TextSize_Custom">Angepasst</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_HorizontalAlignment">Horizontale Ausrichtung</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_VerticalAlignment">Vertikale Ausrichtung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ActivityTooltipFormat">{0} — {1} freigeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ActivityTooltipFormat">{0} — {1} errungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ShowLegend">Legende anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_Less">Weniger</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ActivityLegend_More">Mehr</sys:String>
@@ -1619,7 +1619,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ScreenshotSlideshow">Screenshot-Slideshow</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_RecentAchievements">Erfolgetabelle</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_GameSummaries">Spieletabelle</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_All">Freigeschaltete Erfolge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_AchievementGridSource_All">Errungene Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Aktivitätskalender</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Image">Bild</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Text">Text</sys:String>
@@ -1735,11 +1735,11 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsEarned">Errungen</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">Erste Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Globaler Erfolgsfortschritt</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">Freigeschaltete Erfolge nach Monat</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">Alle freigeschalteten Erfolge nach Monat</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">Alle freigeschalteten Erfolge nach Tag</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">Freigeschaltete Erfolge nach Tag</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">Freigeschaltete Erfolge nach Quelle</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">Errungene Erfolge nach Monat</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">Alle errungenen Erfolge nach Monat</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">Alle errungenen Erfolge nach Tag</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">Errungene Erfolge nach Tag</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">Errungene Erfolge nach Quelle</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsHiddenAchievement">Verborgener Erfolg</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsHiddenTrophy">Verborgene Trophäe</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsLastUnlock">Freischaltung</sys:String>
