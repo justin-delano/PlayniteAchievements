@@ -1644,11 +1644,11 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <!-- 19 Workshop -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Workshop_Title">ワークショップ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">Browse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">閲覧する</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_Colors">カラーセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_ScreenshotFrame">フレーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Kind_ShowcasePage">Showcase pages</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Kind_Bundle">Bundles</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_ShowcasePage">紹介ページ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_Bundle">バンドル</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_GameCustomData">Game data</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SortMostInstalled">Most installed</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SortMostLiked">Most liked</sys:String>
@@ -1656,7 +1656,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_OnlyMyGames">Only games in my library</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Empty">Nothing matches.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_LoadFailed">The Workshop could not be loaded: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Install">Install</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Install">インストール</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Update">更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Reinstall">Reinstall</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateAvailable">アップデートが利用可能です</sys:String>
@@ -1664,15 +1664,15 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_Likes">Likes</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Like">Like</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Unlike">Unlike</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents">カスタム実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Open on GitHub</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_RemoveFromWorkshop">Remove from Workshop</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_RemoveConfirm">Remove &quot;{0}&quot; from the Workshop? Nobody can install it after that; copies people already installed stay theirs, and your library keeps its copy.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents">含まれるもの</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">GitHubで開く</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RemoveFromWorkshop">ワークショップから削除する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_RemoveConfirm">ワークショップから「{0}」を削除しますか？ 削除すると、それ以降誰もそれをインストールできなくなります。すでにインストール済みのコピーは各ユーザーのものがそのまま残り、あなたのライブラリにもコピーが残ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Report">Report this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RequiresNewerPlugin">Requires extension version {0} or newer.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Downloading">Downloading {0}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Downloading">{0}をダウンロード中…</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_InstallChoiceGameData">{1} already has custom data. Merge keeps everything you set and fills in only what the package adds; Replace swaps that data for the package. How should &quot;{0}&quot; be installed?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_InstallChoiceGameData">{1} にはすでにカスタムデータがあります。「マージ」を選択すると、設定した内容はすべて保持され、パッケージで追加された部分のみが上書きされます。「置換」を選択すると、そのデータがパッケージの内容に置き換えられます。「{0}」をどのようにインストールしますか？</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ResetConfirmGameData">{1} を公開済みの &quot;{0}&quot; の状態にリセットしますか? これにより、適用後に変更された内容を含め、対象ゲームのカスタムデータがパッケージで置き換えられます（獲得済みの進捗状況は保持されます）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the games to apply &quot;{0}&quot; to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ApplyToGames">Apply to games</sys:String>
@@ -1685,8 +1685,8 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_UpdatesAvailable">ワークショップの最新情報：{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">編集内容を保持しました：{0}。それ以外はすべて更新されました。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptPreset">編集したプリセット「{0}」は保持されました。新しいバージョンは「{1}」として保存されました。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Account">Account</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Submitter key</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Account">アカウント</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">送信者キー</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKeyHint">投稿を識別するためのIDです。これにより、後で投稿を更新したり削除したりすることができます。別のPlayniteインストール環境でも同じIDを使用するには、このIDをコピーするか、別のPlayniteからキーを貼り付けてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ReplaceKeyConfirm">クリップボードにある送信者キーに置き換えますか？現在のキーで送信されたアイテムは、そのキーを再度貼り付けない限り、このインストール環境からは更新できなくなります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InvalidKey">The clipboard does not contain a submitter key.</sys:String>
@@ -1694,7 +1694,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_ImportBundle">Import bundle...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_BundlesHint">バンドルを使用すると、色、サウンド、通知、フレームを1つの.pabundleファイルにまとめて保存できます。これをインポートすると、各要素がプリセットリストに追加されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_CurrentSettings">Current settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">Choose what each part of the bundle is built from: your current settings or a saved preset.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">バンドルの各部分が、現在の設定か、保存済みのプリセットのどちらに基づいて構成されるかを選択してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_SavedAsCopy">&quot;{0}&quot; is a Workshop item, so your preset was saved as &quot;{1}&quot;.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_Hint">保存した外観や、ワークショップから追加したすべてのアイテム。設定カードから1つを選択して適用すると、更新後も変更した内容が維持されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_InLibrary">In library</sys:String>
@@ -1708,11 +1708,11 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Library_DeleteConfirm">ライブラリから「{0}」を削除しますか？これを使用している場所については、現在の状態が維持されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">サウンド</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Bundle">バンドル（カラー、サウンド、通知、フレーム）</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">Showcase page: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_GameData">Game data: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">Your name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">Comma-separated, up to 10</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">紹介ページ：{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_GameData">ゲームデータ：{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">あなたの名前</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">カンマ区切り、最大10個まで</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">商品ページに表示されている注意事項</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">以前の投稿を更新する</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_NewSubmission">New submission</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Submit</sys:String>
