@@ -122,7 +122,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Automatic">Automatic</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Category">Category</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Clear">Clear</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Clear">クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Close">Close</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_CollapseAll">Collapse All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Columns">Columns</sys:String>
@@ -144,7 +144,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Details">Details</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Favorite">Favorite</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Icon">Icon</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_General">General</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_General">概要</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Height">Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Import">インポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastPlayed">Last Played</sys:String>
@@ -167,7 +167,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Region">Region</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RemoveFromFavorites">Remove from Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Remove">Remove</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Rename">Rename</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Rename">名前の変更</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Reset">Reset</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Search">Search</sys:String>
@@ -611,7 +611,7 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">実績アイコンキャッシュ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">適用と同期</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Include Hidden Games in Bulk Refreshes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">一括更新に非表示のゲームを含める</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Single-game and other targeted refreshes always include hidden games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInSummaries">Include Hidden Games in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInSummaries_Description">When off, games hidden in Playnite are left out of the Overview window, showcase widgets and theme totals. Their own achievement views still work.</sys:String>
@@ -849,8 +849,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">WoWの達成実績を読み込むには、Blizzardの公式APIを使用します。これには、Battle.netアカウントに紐付けられた無料のAPIクライアントが必要です。設定は一度行えば済みます：</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1">1. {0} を開き、新規クライアントを作成してください（名前や詳細は任意で構いません）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. クライアントのリダイレクト URI を、以下に表示されている値（デフォルト: http://127.0.0.1:55431/)と完全に同じに設定してください。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. Copy the client's Client ID and Client Secret into the fields below.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep4">4. Click Sign in below and approve access when your browser opens.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. クライアントの「Client ID」と「Client Secret」を以下の欄にコピーしてください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep4">4. 下の「サインイン」をクリックし、ブラウザが開いたらアクセスを承認してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupSample">Need a walkthrough? See the {0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowReady">キャラクター準備完了</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowIncomplete">Missing character setup</sys:String>
@@ -864,8 +864,8 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">代替サインイン</sys:String>
 
     <!-- Provider: Game Jolt -->
-    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Log in to Game Jolt in the browser window to read your unlocked trophies. Game Jolt achievements are only tracked for games added by the Game Jolt Library extension, or for games given a manual Game Jolt game ID in Manage Achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">ブラウザウィンドウでGame Joltにログインすると、アンロック済みのトロフィーを確認できます。Game Joltの達成状況は、「Game Jolt Library」拡張機能によって追加されたゲーム、または「達成状況の管理」で手動でGame JoltゲームIDが割り当てられたゲームについてのみ追跡されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">注：読み込まれるのは、ご自身がアンロックしたトロフィーのみです。Game Joltでは、ログインしない限り実績情報は公開されません。</sys:String>
 
     <!-- Provider: Meta Quest -->
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Help">Log in to Meta in the browser window to read your unlocked achievements. Meta Quest achievements are tracked for games added by the Meta Quest/Oculus Library extension, or for games given a manual Meta app ID in Manage Achievements.</sys:String>
@@ -895,11 +895,11 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">These images cover a locked or hidden icon until it is revealed. Drag in an image link or file, or browse for one; Clear restores the built-in image.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、ロックされている、または非表示になっているアイコンを、表示されるまで覆い隠します。画像のリンクやファイルをドラッグして追加するか、ファイルを選択してください。「クリア」をクリックすると、標準の画像に戻ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">File Scan Cache Max Age (days)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Choose which details a locked or hidden achievement gives away. Untick a box to cover that detail until you click the achievement to reveal it.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">ロックまたは非表示にされた実績から、どの詳細情報を表示するかを設定します。チェックボックスのチェックを外すと、その詳細情報は非表示になり、実績をクリックして表示するまで隠されたままになります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">更新間隔 (時間):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Clear every cached icon file.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Clear only separate locked icons. The next refresh restores them.</sys:String>
@@ -964,7 +964,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">ストアとランチャー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ConsoleMobile">コンソールとモバイル</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_EmulatorsRetro">エミュレータとレトロ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">マニュアルおよびデータ集約</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">{0} を使用</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">フレンド</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
@@ -1073,7 +1073,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">ShadPS4のルートフォルダ。レガシー形式と新しい形式の両方が検出されます。デフォルト：%AppData%\shadPS4。</sys:String>
 
     <!-- Provider: Ubisoft -->
-    <sys:String x:Key="LOCPlayAch_Settings_Ubisoft_Help">Log in to Ubisoft Connect in the browser window to read your achievements. Ubisoft achievements are tracked for games added by the Ubisoft Connect library extension, or for games given a manual Ubisoft product ID in Manage Achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ubisoft_Help">ブラウザウィンドウでUbisoft Connectにログインすると、実績を確認できます。Ubisoftの実績は、Ubisoft Connectライブラリ拡張機能によって追加されたゲーム、または「実績の管理」で手動でUbisoft製品IDが割り当てられたゲームについて追跡されます。</sys:String>
 
     <!-- Provider: Vita3K -->
     <sys:String x:Key="LOCPlayAch_Settings_Vita3KExecutablePathHint">Path to Vita3K.exe. Trophies are read from the active Vita3K user.</sys:String>
@@ -1101,7 +1101,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">コンプリートしたゲームの達成ステータスを設定する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">レア度バーを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealWhen">Reveal when</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Spoilers">Spoilers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Spoilers">ネタバレ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesSort_PinOrder">Pin order</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the sorted column header again to return to this default.</sys:String>
@@ -1510,7 +1510,7 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">画像ファイル</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_AllFiles">すべてのファイル</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PinCollection">Pin collection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_RenameCollection">Rename collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenameCollection">コレクションの名前を変更する</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_RenameCollectionPrompt">新規コレクション名を入力:</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeleteCollection">コレクションを削除</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ClearCollection">Clear collection</sys:String>
