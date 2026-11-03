@@ -129,7 +129,7 @@
     <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">Completion Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Copy">Copy</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Custom">カスタム</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Disabled">Disabled</sys:String>
@@ -146,7 +146,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_General">General</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Height">Height</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Import">Import</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Import">インポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Library">Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_GroupBy">Group By</sys:String>
@@ -172,7 +172,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Search">Search</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">Select All</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Advanced">Advanced</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Advanced">高度な設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Settings">Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Layout">Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Metadata">Metadata</sys:String>
@@ -1026,7 +1026,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (Scaled)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">あいまい検索を有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Fetch RetroAchievements subsets</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Rarity stats</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">レアリティのステータス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">カジュアル</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Sets which rarity (hardcore or softcore) is shown for locked achievements. Unlocked achievements always use their own unlock mode.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking">Instant unlocks (emulator log)</sys:String>
@@ -1157,7 +1157,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads platform-supplied locked icons when they differ from the unlocked icon. Otherwise the unlocked icon is shown in grayscale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">ユーティリティ</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use Cover Images Instead of Icons in Games List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">アイテムを表示</sys:String>
     <!-- Context_Preview / Context_Settings: uppercase panel labels above theme preview and settings columns -->
     <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">プレビュー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">設定</sys:String>
@@ -1165,13 +1165,13 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">プリセット{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">バッジの色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColors">プラットフォームの色</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColorsDescription">Customize the color used for each platform across icons, charts, and other platform visuals.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColorsDescription">各プラットフォームにおけるアイコン、グラフ、その他の視覚要素に使用される色をカスタマイズします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">Completed game badge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientStart">グラデーション開始</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientEnd">グラデーション終了</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">高度なテーマリソース</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Follow Playnite</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Playniteのデフォルト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">テキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">セカンダリテキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">Muted text</sys:String>
@@ -1185,7 +1185,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Selection">Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlSurface">ボタン背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupSurface">ポップアップ背景</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupBorder">Popup border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupBorder">ポップアップの枠線</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_CaptionSize">小テキストサイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodySize">通常テキストサイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TitleSize">大テキストサイズ</sys:String>
@@ -1284,7 +1284,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">完全移行</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">限定移行</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">レガシー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">モダン</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">テーマ変更を適用するには Playnite を再起動してください。</sys:String>
@@ -1631,7 +1631,7 @@ Continue?</sys:String>
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Workshop_Title">Workshop</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Tab_Browse">Browse</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Kind_Colors">Color sets</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Kind_Colors">カラーセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_ScreenshotFrame">フレーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_ShowcasePage">Showcase pages</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Kind_Bundle">Bundles</sys:String>
