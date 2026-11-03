@@ -1664,7 +1664,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_Likes">Likes</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Like">Like</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Unlike">Unlike</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents">Contains</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents">カスタム実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_OpenOnGitHub">Open on GitHub</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RemoveFromWorkshop">Remove from Workshop</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RemoveConfirm">Remove &quot;{0}&quot; from the Workshop? Nobody can install it after that; copies people already installed stay theirs, and your library keeps its copy.</sys:String>
@@ -1731,13 +1731,13 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">Optional, for example the game's banner art</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">The cover image must be 5 MB or smaller.</sys:String>
     <!-- Labels of a Workshop item's contents summary, each followed by its count. -->
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">Custom achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Overrides">Overrides</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Widgets">Widgets</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Images">Images</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomTemplate">Custom template</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomFrameTemplate">Custom frame template</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Contents_KindStyles">Per-kind styles</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">カスタム実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Overrides">置き換え</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Widgets">ウィジェット</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_Images">画像</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomTemplate">カスタムテンプレート</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomFrameTemplate">カスタムフレームテンプレート</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Contents_KindStyles">種類ごとのスタイル</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->
