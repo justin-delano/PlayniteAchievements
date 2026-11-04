@@ -327,10 +327,10 @@ Dadurch wird die manuelle Verknüpfung, Freischaltzeiten und zwischengespeichert
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_ManageCategories">Kategorieverwaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSelected">{0} Kategorien löschen? Die enthaltenen Erfolge ({1}) werden zurück in die Standardkategorie verschoben.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSingle">&quot;{0}&quot; löschen? Die enthaltenen Erfolge ({1}) werden zurück in die Standardkategorie verschoben.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">Filterung nach Kategoriebezeichnung</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">Filterung nach Kategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Tags">Nach Schalgwort filtern</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_FilterScopeTooltip">Apply a filter to every achievement in this category. Subcategories keep their own. Shows blank when they differ.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Kategoriebezeichnung für ausgewählte Erfolge</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">Kategorie für ausgewählte Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Indent">Make subcategory of the category above</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Outdent">Eine Ebene nach oben bewegen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">Category names cannot contain &quot;::&quot;. Use the arrow buttons or the right-click menu to make a category a subcategory of another.</sys:String>
