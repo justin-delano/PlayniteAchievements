@@ -155,7 +155,7 @@
     <sys:String x:Key="LOCPlayAch_Common_SortBy">Sortierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">Absteigend</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Name">Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Next">Next</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Next">Weiter</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">—</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Notes">Anmerkungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Notifications">Benachrichtigungen</sys:String>
@@ -1215,7 +1215,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <!-- 12 Overview and Filters -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_CompareSelectorPlaceholder">Vergleichen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_CompareSelfOption">Me</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_CompareSelfOption">Ich</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Erfolge filtern ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Vollendet</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_InProgress">Begonnen</sys:String>
@@ -1679,7 +1679,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">Kept your edits: {0}. Everything else was updated.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptPreset">Your edited preset &quot;{0}&quot; was kept; the new version was saved as &quot;{1}&quot;.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Account">Benutzerkonto</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Übermittlungsschlüssel</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKey">Veröffentlichungsschlüssel</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SubmitterKeyHint">Identifies your submissions so you can update or remove them later. Copy it to use the same identity on another Playnite install, or paste a key from one.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ReplaceKeyConfirm">Replace your submitter key with the one on the clipboard? Items submitted with the current key can no longer be updated from this install unless you paste it back.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InvalidKey">The clipboard does not contain a submitter key.</sys:String>
@@ -1706,9 +1706,9 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">Bis zu 10 kommasepariert</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Readme">Notes shown on the item's page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Update my earlier submission</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_NewSubmission">New submission</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Absenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_UpdateExisting">Frühere Veröffentlichung aktualisieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_NewSubmission">Neue Veröffentlichung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_Submit">Veröffentlichen</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Uploading">{0} hochladen ...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Submitted">Submitted. The Workshop updates once the automatic checks pass, usually within a couple of minutes; follow progress at {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Mine">Eigene</sys:String>
