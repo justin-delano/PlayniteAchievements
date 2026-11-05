@@ -130,7 +130,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Copy">Copy</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Custom">カスタム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Default">デフォルト</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">すべて選択を解除</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Disabled">無効</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Bottom">Bottom</sys:String>
@@ -170,7 +170,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Rename">名前の変更</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Reset">リセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Save">Save</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Search">Search</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Search">検索</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">すべて選択</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Advanced">高度な設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Settings">Settings</sys:String>
