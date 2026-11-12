@@ -357,10 +357,10 @@
     <sys:String x:Key="LOCPlayAch_AchievementTag_Softcore">ソフトコア</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Stackable">重複獲得可能</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Subset">Subset</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Unobtainable">現在獲得不可</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Unobtainable">獲得不可</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Update">アップデート</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_WinCondition">勝利条件</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">選択した画像ファイルは存在しません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">選択された画像ファイルは存在しません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">アイコンフォルダを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">拡張データパスが利用できません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">1つ以上のアイコン値が無効です。画像リンク（http:// または https://）またはローカルの画像ファイルを使用してください。</sys:String>
@@ -371,7 +371,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ExportTemplate">CSV テンプレートをエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportCreatedCategories">作成されたカテゴリ：{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportIgnoredColumns">無視された列: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSkippedValues">{0} の値は、それらの実績は編集できないため、スキップされました。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSkippedValues">編集が許可されていない実績が含まれているため、{0} 件の値がスキップされました。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportSummary">{0} 行をインポートしました（{1} 行が追加され、{2} 行が更新されました）。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_LockedIcon">未解除アイコン</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NewAchievementName">新しい実績 {0}</sys:String>
@@ -650,7 +650,7 @@ Reclaimed {3}.</sys:String>
 
 Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Title">画像キャッシュの圧縮</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievemenの設定</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievemen 設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Alignment">配置</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Colors">カラー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Formatting">Formatting</sys:String>
@@ -668,7 +668,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration_Description">ゲームの更新後、まだキャップストーンがない場合は一度だけ自動キャップストーンを付与します。これをオフにすると新規生成が停止し、既存のキャップストーンは保持されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_ApplyToExisting">ライブラリにすでにあるゲームにも自動キャップストーンを追加しますか？</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_Progress">自動最終実績を追加中...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_Hint">新しい自動キャップストーンに表示されるテキストです。{0}はゲーム名、{1}はカテゴリ名です。保存すると、まだデフォルトのテキストのままの既存の自動キャップストーンも更新されますが、タイトルや説明を編集したものはその状態が維持されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_Hint">新規の自動最終実績に適用されるテキストです。{0} はゲーム名、{1} はカテゴリー名に置き換わります。保存すると、デフォルトテキストのままの既存の自動最終実績も更新されます; タイトルまたは説明を編集したものは変更されません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Tags_Hint">すべてのゲームの実績に付けられる共通タグです。実績の管理からゲーム固有のタグを追加することもできます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_TemplateInvalid">無効なテンプレートです。ゲームには {0}、カテゴリーには {1} を使用し、リテラルの場合は二重中括弧を使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures">フレンド機能を有効にする</sys:String>
@@ -721,15 +721,15 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_Customize">&quot;{0}&quot; の通知スタイルを個別に設定する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_ResetToBase">共有スタイルにリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_StopSeparateConfirm">これらの通知の個別スタイル設定を解除しますか? 個別のスタイルと画像は削除されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Sounds_Customize">「{0}」 で個別のサウンドを使用する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Sounds_Customize">&quot;{0}&quot; に個別のサウンドを使用する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Sounds_StopSeparateConfirm">ここでの個別サウンドの使用を停止しますか? これらの解除音は再び継承されたサウンドを再生するようになります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ShareHint">このタブのスタイルをファイルまたは Workshop にエクスポートします。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportSurfaceMismatch">このファイルには{0}スタイルが含まれていますが、{1}タブが開いています。それでもインポートしますか？</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportSurfaceMismatch">このファイルには{0}のスタイルが含まれていますが、{1}のタブが開かれています。このままインポートしますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportConfirm">このファイルのスタイルを現在の選択範囲に適用しますか？</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportIncludeTemplate">そのファイルにカスタムテンプレートを組み込みますか？</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportUnsupportedFile">.panotif および .paframe ファイルのみがサポートされています。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImportMissingManifest">このパッケージには、通知スタイルのマニフェストが含まれていません。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportNotPackage">このファイルはスタイルパッケージではありません。エクスポートした元の .panotif または .paframe ファイルをインポートしてください。そこから抽出したファイルはインポートしないでください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_ImportNotPackage">このファイルはスタイルパッケージではありません。展開したファイルではなく、エクスポートした元の .panotif または .paframe をインポートしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ResetToDefault">デフォルトにリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ResetConfirm">このタブをデフォルトのスタイルにリセットしますか? 変更内容はすべて消去され、カスタムテンプレートも削除されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ExportDefaultTemplate">デフォルトのテンプレート (.xaml)</sys:String>
@@ -848,7 +848,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">クライアントシークレット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URI</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_AggregateAccountCharacters">Combine achievements from every character on the account</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">WoWの達成実績を読み込むには、Blizzardの公式APIを使用します。これには、Battle.netアカウントに紐付けられた無料のAPIクライアントが必要です。設定は一度行えば済みます：</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">WoW の実績を読み込むには Blizzard の公式 API を使用するため、Battle.net アカウントに紐づいた無料の API クライアントが必要です。設定は初回のみ必要です:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1">1. {0} を開き、新規クライアントを作成してください（名前や詳細は任意で構いません）。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. クライアントのリダイレクト URI を、以下に表示されている値（デフォルト: http://127.0.0.1:55431/)と完全に同じに設定してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. クライアントの「Client ID」と「Client Secret」を以下の欄にコピーしてください。</sys:String>
@@ -897,7 +897,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">デバッグ用にデータベーステーブルを CSV にエクスポートする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、ロックされている、または非表示になっているアイコンを、表示されるまで覆い隠します。画像のリンクやファイルをドラッグして追加するか、ファイルを選択してください。「クリア」をクリックすると、標準の画像に戻ります。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、未解除または隠し実績のアイコンが表示されるまで変わりに表示されます。画像リンクやファイルをドラッグ&amp;ドロップするか、参照して選択してください。クリアを押すと組み込み画像に戻します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">ファイルスキャンキャッシュを再構築</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">ファイルスキャンキャッシュの最大保持期間（日）</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
@@ -951,7 +951,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">カテゴリーモードにおいて、進捗バーの下に完了バッジを表示するカテゴリー行を指定します。「最初」を選択すると設定されたカテゴリー順の最初のカテゴリーに使用されるため、グリッドを別の列で並べ替えてもそのカテゴリーに紐付けられたままになります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode">Image scaling in columns</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">Stretch to fill</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">ご自身のサイズに合わせて</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">元のサイズまで</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Help">実績アイコン、カテゴリ、ゲームの各列、ゲーム一覧の「概要」、および「実績の管理」エディタなど、サイズ変更可能なグリッド列において、アートの表示サイズがどのように調整されるかについて説明します。「セルいっぱいに伸ばす」を選択すると、アートがセルいっぱいに拡大されます。「元のサイズまで」を選択すると、アートのピクセルサイズを超えることはなく、そのサイズまで拡大されます。どちらの設定も、列の幅が狭い場合はアートを縮小して収めます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">ピクセル (空欄 = 無制限)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">行 (空欄 = 無制限)</sys:String>
@@ -963,7 +963,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} 認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} は設定されていません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} 接続</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">このプラットフォームは無効になっています。実績を追跡するには、有効にしてください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">このプラットフォームは無効になっています。実績をトラッキングするには有効にしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">このプラットフォームを有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_StoresLaunchers">ストアとランチャー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ConsoleMobile">コンソールとモバイル</sys:String>
@@ -1030,7 +1030,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (Scaled)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">あいまい検索を有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">RetroAchievementsのサブセットを取得する</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">レアリティのステータス</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">レア度統計</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">カジュアル</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">ロックされている実績について、どのレアリティ（ハードコアまたはソフトコア）を表示するかを設定します。アンロック済みの実績については、常にその実績固有のアンロックモードが使用されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEmulatorLogTracking">即時解除（エミュレータログ）</sys:String>
@@ -1058,9 +1058,7 @@ Wars 2』アカウントに紐付けられた無料のAPIキーが必要です�
     <sys:String x:Key="LOCPlayAch_Settings_MinecraftPlayerUuid_Help">任意です。空欄のままにすると、ランチャーにサインインしているアカウントが使用されます。</sys:String>
 
     <!-- Provider: Riot -->
-    <sys:String x:Key="LOCPlayAch_Settings_Riot_Help">『リーグ・オブ・レジェンド チャレンジ』の読み取りには、Riotの公式APIが使用されます。これには、Riot
-
-アカウントに紐付けられた無料のAPIキーが必要です。Riotは、APIキーなしで動作するプレイヤー単位のエンドポイントを公開していません：</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Riot_Help">League of Legens チャレンジを読み込むには Riot の公式 API を使用するため、Riot アカウントに紐づいた無料の API キーが必要です。Riot は API キーなしで動作するプレイヤー別のエンドポイントを提供していません:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep2">2. ダッシュボードに表示されている開発用 API キーを、下の API キー入力欄にコピーしてください。期限が切れている場合は再生成 (Regenerate) ボタンを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_SetupStep3">3. Riot IDを入力し、アカウントが登録されている地域を選択してから、「確認」をクリックしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Riot_Expiry">開発用キーは24時間後に無効となり、その都度再生成する必要があります。有効期限のないキーが必要な場合は、ポータル上の「Register
@@ -1432,7 +1430,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <!-- Text_UnknownAchievement: fallback shown when an achievement's name cannot be resolved -->
     <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
     <!-- Riot_AccountNotFound: {0} is the Riot ID that failed to resolve -->
-    <sys:String x:Key="LOCPlayAch_Riot_AccountNotFound">{0}が見つかりませんでした。Riot IDと選択した地域を確認してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Riot_AccountNotFound">{0} が見つかりませんでした。Riot ID と選択した地域を確認してください。</sys:String>
     <!-- Xenia_NotFoundWarning: {0} is the missing item (TitleID or a .gpd filename), {1} is the game name -->
     <sys:String x:Key="LOCPlayAch_Xenia_NotFoundWarning">{1} に対して {0} が見つかりません。Xenia でゲームを一度起動してから、ページを更新してください。</sys:String>
 
@@ -1706,7 +1704,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Library_DeleteConfirm">ライブラリから「{0}」を削除しますか？これを使用している場所については、現在の状態が維持されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Sounds">サウンド</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Bundle">バンドル（カラー、サウンド、通知、フレーム）</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">紹介ページ：{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_ShowcasePage">ショーケースページ: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_GameData">ゲームデータ: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_AuthorName">あなたの名前</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_TagsHint">カンマ区切り、最大 10 個まで</sys:String>
@@ -1722,12 +1720,12 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">変更のない実績を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_PackageOnly">このゲームはライブラリに登録されていないため、パッケージの内容は比較表示なしで表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">アイコン: {0} · オーバーライド: {1} · カテゴリー: {2} · 最終実績: {3} · カスタム実績: {4}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">編集内容は保存されます：{0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">編集内容は保持されます: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">ほかにも {0} 件</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">プレビューをレンダリング中…</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">カバー画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">任意 例：ゲームのバナーアートなど</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">表紙画像は5MB以下でなければなりません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">カバー画像は 5MB 以下である必要があります。</sys:String>
     <!-- Labels of a Workshop item's contents summary, each followed by its count. -->
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">カスタム実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_Overrides">置き換え</sys:String>
