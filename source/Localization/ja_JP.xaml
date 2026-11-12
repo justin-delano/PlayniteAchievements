@@ -1242,7 +1242,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Filter_Played">プレイ済み</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unowned">Unowned</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">未プレイ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_AllTime">全の期間</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_AllTime">全期間</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_SinceDate">{0} 以降</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_UntilDate">{0} まで</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Visible</sys:String>
