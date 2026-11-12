@@ -13,7 +13,7 @@
     <sys:String x:Key="LOCPlayAch_Achievements">実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">統計から除外</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">統計に含める</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_AddNamed">「{0}」を追加する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_AddNamed">&quot;{0}&quot; を追加</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SearchOrAdd">検索または追加</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Check">確認</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Continue">続行</sys:String>
@@ -517,7 +517,7 @@ Cached achievement data is kept.</sys:String>
     <!-- 08 Manual Tracking and Linking -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">手動リンク用の Exophase 認証を確認できませんでした。再試行するか、プラグイン設定で Exophase の再認証を行ってください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_SignInRequired">Sign in to {0} in plugin settings first.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">The selected game has no achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
@@ -630,12 +630,12 @@ Cached achievement data is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">コンパクト解除済リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">キャッシュされた実績アイコンを圧縮します。通常、これが最も容量の大きいグループです。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">プロバイダーから提供されたデフォルトのカテゴリアートワークを圧縮する。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{1} 枚のキャッシュされた画像のうち、{0} 枚が {2} ピクセルより大きいです。
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">キャッシュされた画像 {1} 件中 {0} 件が {2} px を超えています。
 
-現在のサイズ：{3}
-圧縮後の推定サイズ：{4}
+現在のサイズ: {3}
+圧縮後の推定サイズ: {4}
 
-ファイルはその場で上書きされ、この操作は元に戻せません。続行しますか？</sys:String>
+ファイルは直接上書きされ、この操作は元に戻せません。続行しますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">独自のアイコンやカテゴリ画像は、ご自身で圧縮してください。ページを更新しても、これらは復元されません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">キャッシュされた大きすぎる画像を縮小して、ディスク容量を解放します。選択したサイズ以下である画像は変更されず、圧縮は元に戻せません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">フレンドのアバターや未所有ゲームの画像を圧縮します。これらの大部分はすでに小さくなっています。</sys:String>
@@ -1208,7 +1208,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_ConsoleVersionHint">When a game is on several PlayStation or Xbox consoles, take its list from the newest or the oldest.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_Sources">ソース</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_SourcesHint">Default follows the top row. Set a game's own sources and matches in Manage Achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Metadata_OfficialSources">PlayStation and Xbox read the official trophy and achievement lists from Exophase, or from TrueGaming when its page is already loaded.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Metadata_OfficialSources">PlayStation と Xbox では、公式のトロフィーおよび実績リストを Exophase から読み込みます。TrueGaming のページが既に読み込まれている場合、そちらから読み込みます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_PlayStation">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_SteamHunters">SteamHunters</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_TrueGaming">TrueGaming</sys:String>
@@ -1491,7 +1491,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Showcase_RenamePage">ページの名前を変更する</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ExportPage">ページをエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImportPage">インポートページ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_RenamePrompt">ページ名を入力してください：</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_RenamePrompt">ページ名を入力してください:</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MovePageLeft">Move page left</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MovePageRight">Move page right</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ResetTrackSizes">行と列のサイズをリセットする</sys:String>
@@ -1691,7 +1691,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <sys:String x:Key="LOCPlayAch_Workshop_ExportBundle">バンドルをエクスポート…</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ImportBundle">バンドルをインポート…</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_BundlesHint">バンドルを使用すると、色、サウンド、通知、フレームを1つの.pabundleファイルにまとめて保存できます。これをインポートすると、各要素がプリセットリストに追加されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_CurrentSettings">Current settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_CurrentSettings">現在の設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">バンドルの各部分が、現在の設定か、保存済みのプリセットのどちらに基づいて構成されるかを選択してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_SavedAsCopy">「{0}」はワークショップアイテムであるため、プリセットは「{1}」として保存されました。</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_Hint">保存した外観や、ワークショップから追加したすべてのアイテム。設定カードから1つを選択して適用すると、更新後も変更した内容が維持されます。</sys:String>
@@ -1741,7 +1741,7 @@ Product」を使用して個人用キーを申請してください。</sys:Stri
     <!-- 99 Legacy SuccessStory Compatibility -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayniteAchievementsAchievements">実績</sys:String>
-    <sys:String x:Key="LOCPlayniteAchievementsAchievementsCount">Achievements count</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsAchievementsCount">実績数</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsAchStats">実績の統計</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsBaseGame">ゲーム本体</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsCommon">コモン</sys:String>
