@@ -340,17 +340,17 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新規カテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game grids. Click again to clear.</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">本編</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ課題</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集アイテム</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Completion">完全クリア</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Cumulative">累計</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Difficulty">難易度</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Cumulative">累計達成</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Difficulty">難易度指定</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_DLC">DLC</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Hardcore">ハードコア</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Miscellaneous">その他</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Miscellaneous">その他・特殊</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Missable">取り逃し注意</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Multiplayer">マルチプレイヤー</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_PostGame">クリア後</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_PostGame">クリア後要素</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Progression">ストーリー進行</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_SideQuest">サブクエスト</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Singleplayer">シングルプレイヤー</sys:String>
@@ -359,7 +359,7 @@ This removes the manual link and deletes its unlock times and this game's cached
     <sys:String x:Key="LOCPlayAch_CategoryKind_Subset">サブセット</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Unobtainable">獲得不可</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Update">更新</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_WinCondition">勝利条件</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_WinCondition">勝利条件達成</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing">選択された画像ファイルは存在しません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">アイコンフォルダを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
@@ -611,9 +611,9 @@ Achievements from the platform are loaded again afterwards. This cannot be undon
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">実績アイコンキャッシュ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">適用と同期</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Include Hidden Games in Bulk Refreshes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">非表示ゲームを一括更新に含める</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Single-game and other targeted refreshes always include hidden games.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInSummaries">Include Hidden Games in Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInSummaries">非表示ゲームを統計に含める</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInSummaries_Description">When off, games hidden in Playnite are left out of the Overview window, showcase widgets and theme totals. Their own achievement views still work.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExclusionFilters_Description">選択した保存済み Playnite フィルターのいずれかに一致するゲームは自動的に除外され、一致しなくなると再び対象に含まれます。手動で対象または除外を設定したゲームは、その設定が優先されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">棒グラフ</sys:String>
@@ -626,27 +626,27 @@ Achievements from the platform are loaded again afterwards. This cannot be undon
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">コンパクトリスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">コンパクト未解除リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">コンパクト解除済リスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Compress cached achievement icons. This is normally the largest group.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Compress provider-supplied default category art.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">キャッシュされた画像 {1} 件中 {0} 件が {2} px を超えています。
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">実績アイコンキャッシュを圧縮します。通常、これが最も大きいグループです。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">プロバイダ提供のデフォルトカテゴリーアートを圧縮します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">画像キャッシュ {1} 件中 {0} 件が {2} px を超えています。
 
 現在のサイズ: {3}
 圧縮後の推定サイズ: {4}
 
 ファイルは直接上書きされ、この操作は元に戻せません。続行しますか?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">Compress your own icon and category images. A refresh cannot restore these.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">Downscale oversized cached images to reclaim disk space. Images already at or below the selected size are left unchanged, and compression cannot be undone.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">Compress friend avatars and unowned game images. Most of these are already small.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">自分で設定したアイコンやカテゴリー画像を圧縮します。更新しても元の画質には戻りません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">大きすぎる画像キャッシュを縮小してディスク領域を解放します。選択したサイズ以下の画像は変更されず、圧縮は元に戻せません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">フレンドのアバターや未所有ゲームの画像を圧縮します。これらのデータの多くは既に非常に小さいサイズになっています。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">最大画像サイズ:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">No cached images are larger than {0} px.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">{0} px を超える画像キャッシュは見つかりませんでした。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">画像キャッシュを圧縮中... ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">画像キャッシュをスキャン中... ({0}/{1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">Compressed {0} images. Skipped {1}, failed {2}.
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Result">{0} 個の画像を圧縮しました (スキップ: {1}、失敗 {2})。
 
-Reclaimed {3}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ResultCanceled">Canceled after compressing {0} images.
+削減された容量: {3}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ResultCanceled">{0} 個の画像を圧縮した後にキャンセルしました。
 
-Reclaimed {1}.</sys:String>
+削減された容量: {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Title">画像キャッシュの圧縮</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievemen 設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Alignment">配置</sys:String>
@@ -895,7 +895,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、未解除または隠し実績のアイコンが表示されるまで変わりに表示されます。画像リンクやファイルをドラッグ&amp;ドロップするか、参照して選択してください。クリアを押すと組み込み画像に戻します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、未解除または隠し実績のアイコンが表示されるまで変わりに表示されます。画像リンクやファイルをドラッグ&amp;ドロップするか、参照して選択してください。消去を押すと組み込み画像に戻ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">File Scan Cache Max Age (days)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
