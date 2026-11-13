@@ -506,8 +506,8 @@ This also deletes the manual link and the achievements it produced. This cannot 
     <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0} / {1} 文字</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">メモを編集</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Italic">斜体</sys:String>
-    <sys:String x:Key="LOCPlayAch_NotesDialog_Link">Link</sys:String>
-    <sys:String x:Key="LOCPlayAch_NotesDialog_Strikethrough">Strikethrough</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Link">リンク</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Strikethrough">打ち消し線</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Underline">下線</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">メモを表示</sys:String>
 
@@ -651,7 +651,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievemen 設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Alignment">配置</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_Colors">色</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_Formatting">Formatting</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_Formatting">書式</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">デスクトップテーマ統合</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">圧縮ファイルのスキャンを有効にする (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">ディスクのハッシュ照合を有効にする (ディスク媒体のゲーム機用)</sys:String>
@@ -776,7 +776,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontFamily">フォントファミリー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadow">Text shadow</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ImageShadow">画像の影</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOpacity">Opacity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOpacity">不透明度</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOffset">オフセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">テーマデフォルト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">ヘッダーテキスト</sys:String>
@@ -822,7 +822,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleDescription">実績説明の例。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">ショートカットを押してください...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">The category grouping shortcut works when the active window has an achievement grid with a category toggle.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Configure shortcuts for opening achievement windows and the overview. Game-specific hotkeys use the running game first, then the selected game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_Description">実績ウィンドウや概要ウィンドウを開くショートカットを設定します。ゲームに関連したホットキーは、実行中のゲームを優先し、なければ選択中のゲームを対象とします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">That shortcut is already assigned.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">実績ホットキーを有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">グローバルホットキーを有効にする</sys:String>
@@ -943,7 +943,7 @@ Reclaimed {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn">Category column</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_Subcategory">サブカテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_TopLevel">Top level</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_FullPath">Full path</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_FullPath">フルパス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_Help">Which part of a nested category the Category column shows. Hover a cell to see the full path.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">Which category rows show the completed badge under their progress bar in category mode. First uses the first category in your configured category order, so it stays with that category when you sort the grid by a column.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode">Image scaling in columns</sys:String>
@@ -1254,7 +1254,7 @@ Reclaimed {1}.</sys:String>
 
 This deletes cached data for {0:N0} games that only your friends own. Data for games you own is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared unowned friend data for {0:N0} games.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">フレンドの実績データがまだありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">フレンドの更新に失敗しました。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Friends Overview is not available.</sys:String>
@@ -1294,7 +1294,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <!-- ================================================================= -->
     <!-- 14 First-Time Landing -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Landing_BeginRefresh">Begin Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_BeginRefresh">更新を開始</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">有効</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Found your existing achievement data</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
@@ -1454,8 +1454,8 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <!-- Showcase dashboards -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Showcase_Title">ショーケース</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PreviousPage">Previous Showcase page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_NextPage">Next Showcase page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PreviousPage">前のショーケースページ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NextPage">次のショーケースページ</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PageActions">Showcase page actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget">ウィジェット</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_WidgetSettings">ウィジェット設定</sys:String>
@@ -1498,13 +1498,13 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Showcase_ResetPageConfirm">このページをリセットしますか? 現在のウィジェットとレイアウトは削除されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeletePage">ページを削除</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_DeletePageConfirm">Delete this page and all widgets on it?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Template_Blank">Blank</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Template_Analytics">Analytics</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Template_UpNext">Up Next</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_Blank">空白</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_Analytics">分析</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Template_UpNext">次の実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Template_TrophyCase">トロフィーケース</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Template_Library">ライブラリ</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileName">表示名</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">Subtitle</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileSubtitle">サブタイトル</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileBackground">背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ShowBackground">背景を表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ImageFiles">画像ファイル</sys:String>
@@ -1521,7 +1521,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Showcase_NoFavoriteGames">ゲームをピン留めするか、Playnite のお気に入りを利用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoImage">ウィジェット設定で画像を選択してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NoText">Add text in the widget settings.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_NoData">No data yet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_NoData">まだデータがありません</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnknownProvider">不明なプロバイダ</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnavailableAchievement">獲得不可の実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnavailableGame">利用不可のゲーム</sys:String>
@@ -1548,16 +1548,16 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreHistory">Score over time</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Collection">収集</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreMode_Prestige">名声</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedals">Medals</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedals">メダル</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedalMode_Rarity">レア度ランク</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileMedalMode_Trophy">Trophy grades</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileFullBleed">Full-size background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileFullBleed">フルサイズ背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileLayout_Stacked">Stacked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinks">Profile links</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinks">プロフィールリンク</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreCardArt">Icon for one game</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreCardArtHint">Applies when the card shows one game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ScoreCardArt_ProviderIcon">プラットフォームアイコン</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCardArt_GameIcon">Game icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ScoreCardArt_GameIcon">ゲームアイコン</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatarWidth">アバターの幅</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileAvatarHeight">アバターの高さ</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinkIconSize">Link icon size</sys:String>
@@ -1608,8 +1608,8 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Showcase_LoadingScreenshots">スクリーンショットを読み込み中…</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PreviousScreenshot">Previous screenshot</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_NextScreenshot">次のスクリーンショット</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_PauseSlideshow">Pause slideshow</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">Resume slideshow</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_PauseSlideshow">スライドショーを一時停止</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_ResumeSlideshow">スライドショーを再開</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Profile">プロフィール</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Scores">スコアカード</sys:String>
@@ -1657,16 +1657,16 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Workshop_Report">Report this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_RequiresNewerPlugin">Requires extension version {0} or newer.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Downloading">{0} をダウンロード中…</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Installing">Installing...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Installing">インストール中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_InstallChoiceGameData">{1} already has custom data. Merge keeps everything you set and fills in only what the package adds; Replace swaps that data for the package. How should &quot;{0}&quot; be installed?</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ResetConfirmGameData">{1} を公開時の &quot;{0}&quot; にリセットしますか? この操作により、適用後に変更した内容を含め、ゲームのカスタムデータはパッケージの内容に置き換えられます。解除の進捗状況は保持されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_PickGame">Choose the games to apply &quot;{0}&quot; to</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_ApplyToGames">ゲームに適用する</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateConfirmGameData">{1} の &quot;{0} を更新しますか? 前回のインストール以降に加えた編集内容は保持されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share">Share to Workshop</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromFile">From file...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">From Workshop...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">To file...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share">ワークショップに共有</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromFile">ファイルから読み込み...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_FromWorkshop">ワークショップから読み込み...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Menu_ToFile">ファイルへ保存...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_SavedAsPreset">Saved as preset &quot;{0}&quot;. Choose it in the preset list to apply it.</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdatesAvailable">ワークショップの更新が利用可能: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_UpdateKeptEdits">Kept your edits: {0}. Everything else was updated.</sys:String>
