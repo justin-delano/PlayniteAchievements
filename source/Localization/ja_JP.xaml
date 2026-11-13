@@ -127,7 +127,7 @@
     <sys:String x:Key="LOCPlayAch_Common_CollapseAll">すべて折りたたむ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Columns">Columns</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">Completion Status</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Configure">Configure</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Configure">設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Copy">コピー</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Custom">カスタム</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">デフォルト</sys:String>
@@ -958,7 +958,7 @@ Reclaimed {1}.</sys:String>
 
     <!-- Provider: Shared -->
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} 認証</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} は設定されていません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} 接続</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">このプラットフォームは無効になっています。実績をトラッキングするには有効にしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">このプラットフォームを有効にする</sys:String>
@@ -1302,7 +1302,7 @@ This deletes cached data for {0:N0} games that only your friends own. Data for g
     <sys:String x:Key="LOCPlayAch_Landing_Language">実績の言語</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your platforms.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">アカウントを設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">プラグイン設定を開く</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">プラットフォームのステータス</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">セットアップ</sys:String>
