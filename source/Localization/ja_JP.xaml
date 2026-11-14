@@ -75,7 +75,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Manage">管理</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Overview">概要</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Oldest">古い順</sys:String>
-    <sys:String x:Key="LOCPlayAch_Completed">完全クリア</sys:String>
+    <sys:String x:Key="LOCPlayAch_Completed">クリア済み</sys:String>
     <!-- DateRange: tooltips of the From/To date pickers -->
     <sys:String x:Key="LOCPlayAch_DateRange_From">開始</sys:String>
     <sys:String x:Key="LOCPlayAch_DateRange_To">終了</sys:String>
@@ -126,7 +126,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Close">閉じる</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_CollapseAll">すべて折りたたむ</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Columns">列</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">完全クリア状態</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">クリア状態</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Configure">設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Copy">コピー</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Custom">カスタム</sys:String>
@@ -342,7 +342,7 @@
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">本編</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ課題</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集アイテム</sys:String>
-    <sys:String x:Key="LOCPlayAch_AchievementTag_Completion">完全クリア</sys:String>
+    <sys:String x:Key="LOCPlayAch_AchievementTag_Completion">クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Cumulative">累計達成</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Difficulty">難易度指定</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_DLC">DLC</sys:String>
@@ -458,7 +458,7 @@
     <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">このフルコン実績はどのカテゴリーに対応していますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Replaces">置換 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Categorized">カテゴリー化</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">完全クリア率</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">クリア率</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_GameId">Playnite ゲーム ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_LastUpdatedLocal">最終更新日 (ローカル)</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_OpenAchievementPage">ソースページ</sys:String>
@@ -673,7 +673,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockToasts">自分の解除通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">フレンドの解除通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableProgressToasts">実績の進捗状況通知を表示する</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">フルコン実績でのゲーム完全クリア時に 100% 達成通知をスキップする</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">フルコン実績でのゲームクリア時に 100% クリア率通知をスキップする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent">通知間隔 (%):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">例: 10 を指定すると 10%、20%、30%... のタイミングで通知されます。0 を指定すると更新のたびに通知されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">フォールバック間隔 (秒):</sys:String>
@@ -713,7 +713,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantFramed">フレーム付き</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotSuffixes">ファイル名の接尾辞</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CaptureMinimumRarity">キャプチャ対象のレア度</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AlwaysCaptureCompletion">全実績解除時は常にキャプチャする</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AlwaysCaptureCompletion">ゲームクリア時の実績解除を常にキャプチャする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FrameHeader">フレーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_ToastTab">通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_Kind_Customize">&quot;{0}&quot; の通知スタイルを個別に設定する</sys:String>
@@ -781,15 +781,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">ヘッダーテキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">ローカライズされたデフォルトを使用する場合は空欄のままにしてください。{0} にはフレンド名、またはゲーム完全クリア! タイトルのゲーム名が挿入されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Friend unlocked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% 完全クリア率</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">フレンドがゲームを完全クリアしました</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% クリア率</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">フレンドがゲームをクリアしました</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFormatInvalid">The friend header must include {0} for the friend's name.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">背景画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">Image shown behind the notification; animated formats play.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BlurBackground">ぼかし背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_PreviewBackdrop">Preview over game art</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImages">バッジ画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">レア度と完全クリアバッジを置き換えます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">レア度とクリアバッジを置き換えます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">解除録画</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockRecordings">解除時にクリップを保存する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingDirectory">録画フォルダ</sys:String>
@@ -935,16 +935,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">時間と分</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">時間のみ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource">プログレスバーバッジ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_TrophyWhenAvailable">Trophy when available</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_Help">Which badges show under the progress bar. Trophy when available uses a game's trophies where it has them and its rarity spread everywhere else; Rarity always shows the rarity spread.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">カテゴリー完全クリアバッジ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_TrophyWhenAvailable">トロフィー (利用可能な場合)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_Help">プログレスバーの下に表示するバッジを選択します。&quot;トロフィー&quot; は、トロフィーデータがあるゲームにはトロフィーを表示し、それ以外のゲームではレア度分布を表示します。&quot;レア度&quot; は常にレア度分布を表示します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">カテゴリークリアバッジ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">先頭</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn">Category column</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_Subcategory">サブカテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_TopLevel">Top level</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_FullPath">フルパス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_Help">Which part of a nested category the Category column shows. Hover a cell to see the full path.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">カテゴリーモード時、プログレスバーの下に完全クリアバッジを表示するカテゴリー行を指定します。先頭を選択すると設定したカテゴリー順の最初のカテゴリーが対象となり、列でグリッドを並べ替えてもそのカテゴリーに追従します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge_Help">カテゴリーモード時、プログレスバーの下にクリアバッジを表示するカテゴリー行を指定します。先頭を選択すると設定したカテゴリー順の最初のカテゴリーが対象となり、列でグリッドを並べ替えてもそのカテゴリーに追従します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode">Image scaling in columns</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">Stretch to fill</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">元のサイズまで</sys:String>
@@ -1097,15 +1097,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">表示設定をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Revert Display tab options, grid visibility, column layouts, row sizing, and overview layout to defaults.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">スキャンとハッシュ照合</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">完全クリアゲームに完全クリア状態を設定する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">クリアゲームにクリア状態を設定する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">レア度バーを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealWhen">表示条件</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Spoilers">ネタバレ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GameSummariesSort_PinOrder">Pin order</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the sorted column header again to return to this default.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">完全クリア発光を表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionFrame">完全クリアフレームを表示</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionGlow">クリア発光を表示</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionFrame">クリアフレームを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">フレンドのネタバレを表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">(隠し実績) の接尾辞を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">解除済みアイコンにレア度発光を表示する</sys:String>
@@ -1123,14 +1123,14 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">トップメニューバーボタンを表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">列ヘッダーを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGridControlBar">コントロールバーを表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseTrophiesForRarity">Use Trophies for Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">レア度バッジのデザインを統一する</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseTrophiesForRarity">レア度にトロフィーを使用する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages">レア度百分率の四捨五入</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundRarityPercentages_Help">Values under 1% display as &lt;1%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletedProgressColoring">Color Completed Progress Bars</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SoftGlowTiers">ソフト発光ランク</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RayGlowTiers">Rotating Ray Tiers</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GlowTiers_Help">Pick what gets each effect. The soft glow is a halo around the icon; rotating rays are a sunburst behind it. Completed covers the glow on completed game and category art.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RayGlowTiers">回転レイランク</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GlowTiers_Help">各エフェクトを適用する項目を選択します。ソフト発光はアイコンの周囲に広がる光彩、回転レイはアイコンの背後に広がる放射状の光線です。&quot;クリア&quot; はクリア済みのゲームやカテゴリーアートを対象とします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHardcoreBorder">RetroAchievements のハードコア解除時に枠線を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHardcoreBorder_Help">RetroAchievements のハードコアモードで解除した実績に、発光エフェクトの代わりに光沢のあるメタリックな枠を表示します。オフにすると、他の解除済み実績と同様にレア度に応じた発光エフェクトが適用されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AnimateRarityGlows">レア度発光をアニメーション化する</sys:String>
@@ -1165,7 +1165,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">バッジの色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColors">プラットフォームの色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_ProviderColorsDescription">アイコンやグラフなど、プラットフォーム別の視覚要素に使用する色をカスタマイズします。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">ゲーム完全クリアバッジ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">ゲームクリアバッジ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientStart">グラデーション開始</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_GradientEnd">グラデーション終了</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">高度なテーマリソース</sys:String>
@@ -1179,12 +1179,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">ウィンドウ背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">グリッド背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Border">外枠</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlBorder">Input border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlBorder">入力枠</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Accent">アクセント</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Selection">Selection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlSurface">ボタン背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupSurface">ポップアップ背景</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupBorder">Popup border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupBorder">ポップアップ枠</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_CaptionSize">小テキストサイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodySize">通常テキストサイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TitleSize">大テキストサイズ</sys:String>
@@ -1195,7 +1195,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_ConsoleVersionHint">When a game is on several PlayStation or Xbox consoles, take its list from the newest or the oldest.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_Sources">ソース</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Metadata_SourcesHint">デフォルトでは先頭行の設定に従います。ゲーム固有のソースやマッチングは実績の管理で設定します。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Metadata_OfficialSources">PlayStation と Xbox では、公式のトロフィーおよび実績リストを Exophase から読み込みます。TrueGaming のページが既に読み込まれている場合、そちらから読み込みます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Metadata_OfficialSources">PlayStation と Xbox では、公式のトロフィーおよび実績リストを Exophase から読み込みます。TrueGaming のページが既に読み込まれている場合、そちらから取得します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_PlayStation">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_SteamHunters">SteamHunters</sys:String>
     <sys:String x:Key="LOCPlayAch_Metadata_Source_TrueGaming">TrueGaming</sys:String>
@@ -1215,10 +1215,10 @@
     <sys:String x:Key="LOCPlayAch_Filter_CompareSelectorPlaceholder">比較</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_CompareSelfOption">自分</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">実績を検索</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_Complete">完全クリア</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Complete">クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_InProgress">進捗あり</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">アクティビティ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_OwnershipSelectorPlaceholder">Ownership</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_OwnershipSelectorPlaceholder">所有状況</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_CustomizationSelectorPlaceholder">カスタマイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">ゲームを検索</sys:String>
     <!-- Filter_Hidden: filter label for hidden (secret) achievements, not hidden games -->
@@ -1237,7 +1237,7 @@
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">ゲーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_Incomplete">未クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">No game selected in the overview.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">フレンド</sys:String>
@@ -1412,10 +1412,10 @@
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
     <sys:String x:Key="LOCPlayAch_Toast_Congratulations">おめでとうございます!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
-    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">ゲームを完全クリアしました!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">ゲームをクリアしました!</sys:String>
     <!-- Toast_CompletedTheGame: suffix of a friend's game-completion heading; the template
          composes it as "<friend name> completed the game!" -->
-    <sys:String x:Key="LOCPlayAch_Toast_CompletedTheGame">ゲームを完全クリアしました!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_CompletedTheGame">ゲームをクリアしました!</sys:String>
     <!-- Text_UnknownAchievement: fallback shown when an achievement's name cannot be resolved -->
     <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">不明な実績</sys:String>
     <!-- Riot_AccountNotFound: {0} is the Riot ID that failed to resolve -->
@@ -1562,13 +1562,13 @@
     <sys:String x:Key="LOCPlayAch_Showcase_ProfileLinkIconSize">Link icon size</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_PointsGrouping_Provider">Provider or service</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MosaicSource_UnlockNext">Unlock next</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Completed">完全クリアしたゲーム</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_Completed">クリアしたゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_All">すべてのゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_PlayniteFavorites">Playnite favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_FinishNext">Finish next</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion">Hunt for</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_Easiest">Easiest to get</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_ClosestToCompletion">まもなく完全クリア</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_ClosestToCompletion">まもなくクリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_LastPlayedWindow">Played within</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MaxPerGame">Most per game</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_IncludeHiddenAchievements">隠し実績を含める</sys:String>
@@ -1595,7 +1595,7 @@
 
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_TrackedGames">トラッキング中のゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_PlayedGames">プレイ済みのゲーム</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">完全クリア数</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">クリア数</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">解除/アクティブ日</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">過去 30 日間のペース</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">グローバル平均解除率</sys:String>
