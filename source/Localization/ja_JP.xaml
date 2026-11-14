@@ -322,20 +322,20 @@
     <!-- ================================================================= -->
     <!-- 07 Manage Achievements -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeSubcategoryOf">Make subcategory of</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeTopLevel">Make top level</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeSubcategoryOf">次のサブカテゴリーにする</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_MakeTopLevel">最上位の階層に移動</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Context_ManageCategories">カテゴリーの管理</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSelected">Delete {0} categories? {1} achievement(s) will move back to the Default category.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSingle">Delete &quot;{0}&quot;? {1} achievement(s) will move back to the Default category.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSelected">{0} 件のカテゴリーを削除しますか? {1} 件の実績がデフォルトカテゴリーに戻ります。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_DeleteConfirmSingle">&quot;{0}&quot; を削除しますか? {1} 件の実績がデフォルカテゴリーに戻ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Label">カテゴリーラベルでフィルター</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Filter_Tags">タグでフィルター</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_FilterScopeTooltip">Apply a filter to every achievement in this category. Subcategories keep their own. Shows blank when they differ.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_FilterScopeTooltip">このカテゴリー内のすべての実績にフィルターを適用します。サブカテゴリーは独自の設定を保持します。設定が異なる場合は空白で表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_InputPlaceholder">選択した実績のカテゴリーラベル</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Indent">Make subcategory of the category above</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Indent">上のカテゴリーのサブカテゴリーにする</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Outdent">Move out one level</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">Category names cannot contain &quot;::&quot;. Use the arrow buttons or the right-click menu to make a category a subcategory of another.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">カテゴリー名に &quot;::&quot; を含めることはできません。カテゴリーを別のカテゴリーのサブカテゴリーにするには、矢印ボタンまたは右クリックメニューを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">カテゴリー名の変更やカテゴリー画像の選択、ドラッグによる並べ替えが行なえます。別のカテゴリーの中央にドロップするとサブカテゴリーになり、行を右クリックするとその他の操作が表示されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">Merge into</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">次のカテゴリーに統合</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Merge this category into another, moving its achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新しいカテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game grids. Click again to clear.</sys:String>
