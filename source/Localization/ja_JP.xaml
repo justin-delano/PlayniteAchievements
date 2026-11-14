@@ -1109,7 +1109,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">フレンドのネタバレを表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">(隠し実績) の接尾辞を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">解除済みアイコンにレア度発光を表示する</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">ゲームメタデータ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewMiniShowcase">ミニショーケースを表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter">Pie Center</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieCenter_Percentage">百分率</sys:String>
