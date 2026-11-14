@@ -311,7 +311,7 @@
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">有効な PSN NP Communication ID (例: NPWR12345_00) を入力してください。コレクション作品の場合は、それぞれのゲームIDを「NPWR12345_00+NPWR67890_00」のように「+」で連結してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">フレンド情報を更新</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[更新を実行中]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">選択中のゲームを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetGoal">目標実績に設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">&quot;{0}&quot; の実績のリンクを解除しますか?
@@ -364,10 +364,10 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">アイコンフォルダを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">The extension data path is unavailable.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">One or more icon values are invalid. Use image links (http:// or https://) or local image files.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstone">自動全解除実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstone">自動フルコン実績</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstoneDescription">ゲーム本編のすべての実績を獲得した。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstoneCategoryDescription">{0} のすべての実績を獲得した。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstoneHint">このゲームのプラチナトロフィーを全解除実績として設定します。プラチナが存在しない場合は新しく作成します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_AutoCapstoneHint">このゲームのプラチナトロフィーをフルコン実績として設定します。プラチナが存在しない場合は新しく作成します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ExportTemplate">CSV テンプレートをエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportCreatedCategories">カテゴリを作成: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ImportIgnoredColumns">無視された列: {0}</sys:String>
@@ -377,7 +377,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NewAchievementName">新しい実績 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoImportRows">No importable achievements were found.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_NoSelection">Select a custom achievement row.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">Progress Total</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProgressDenom">全体進捗</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">カスタムプラットフォーム</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete &quot;{0}&quot;? {1} other game(s) use this platform and will show as Custom.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">このプラットフォームへの変更は、割り当てられているすべてのゲームに適用されます。</sys:String>
@@ -453,9 +453,9 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet">Battle.net ゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueRequired">Enter a value for this override.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice">Select a valid game for this override.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">現在のカテゴリの全解除実績: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">現在のゲームの全解除実績: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">この全解除実績はどのカテゴリーに対応していますか?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_CurrentCategory">現在のカテゴリのフルコン実績: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_CurrentGame">現在のゲームのフルコン実績: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ChooseCategory">このフルコン実績はどのカテゴリーに対応していますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Replaces">置換 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Categorized">カテゴリー化</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">完全クリア率</sys:String>
@@ -662,21 +662,21 @@
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsPeriodicUpdates">バックグラウンドでのフレンド更新を有効化 (最近)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">ゲーム起動中に実績を監視する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">ローカルファイルの変更やサービスの配信データを参照して実績解除を即座に検知します。検知できない場合は、予備処理として対象を絞った軽量な更新を行います。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration">自動全解除実績の生成を有効にする</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration_Description">ゲームの更新後、全解除実績が未設定の場合にのみ自動で 1 つ作成します。オフにすると新規作成は停止されますが、既存の全解除実績は保持されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_ApplyToExisting">ライブラリに登録済みのゲームにも自動全解除実績を追加しますか?</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_Progress">自動全解除実績を追加中...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_Hint">新規の自動全解除実績に適用されるテキストです。{0} はゲーム名、{1} はカテゴリー名に置き換わります。保存すると、デフォルトテキストのままの既存の自動全解除実績も更新されます。タイトルまたは説明を編集したものは変更されません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration">自動フルコン実績の生成を有効にする</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableAutoCapstoneGeneration_Description">ゲームの更新後、フルコン実績が未設定の場合にのみ自動で 1 つ作成します。オフにすると新規作成は停止されますが、既存の全解除実績は保持されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_ApplyToExisting">ライブラリに登録済みのゲームにも自動フルコン実績を追加しますか?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneGeneration_Progress">自動フルコン実績を追加中...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_Hint">新規の自動フルコン実績に適用されるテキストです。{0} はゲーム名、{1} はカテゴリー名に置き換わります。保存すると、デフォルトテキストのままの既存の自動フルコン実績も更新されます。タイトルまたは説明を編集したものは変更されません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Tags_Hint">すべてのゲームの実績に付けられる共通タグです。実績の管理からゲーム固有のタグを追加することもできます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_TemplateInvalid">Not a valid template. Use {0} for the game and {1} for the category, and double braces for literal ones.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AutoCapstoneText_TemplateInvalid">無効なテンプレートです。ゲームには {0}、カテゴリーには {1} を使用し、中括弧そのものを表示したい場合は二重中括弧を使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures">フレンド機能を有効にする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockToasts">自分の解除通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">フレンドの解除通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableProgressToasts">実績の進捗状況通知を表示する</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">Skip the 100% notification when a capstone completes the game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">フルコン実績でのゲーム完全クリア時に 100% 達成通知をスキップする</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent">通知間隔 (%):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">例: 10 を指定すると 10%、20%、30%... のタイミングで通知されます。0 を指定すると更新のたびに通知されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Fallback Interval (seconds):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">フォールバック間隔 (秒):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollRefreshFriends">Also Refresh Friends Who Own the Running Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Friend Refresh Every N Polls:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendBatchSize">Friends per Refresh (0 = all):</sys:String>
@@ -814,7 +814,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Override_On">オン</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Override_Off">オフ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Preview frame on screen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewCapstone">全解除実績クリア</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewCapstone">フルコン実績クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleGame">サンプルゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleCategory">サンプルカテゴリー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleTitle">実績の例</sys:String>
@@ -937,7 +937,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource">プログレスバーバッジ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_TrophyWhenAvailable">Trophy when available</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBadgeSource_Help">Which badges show under the progress bar. Trophy when available uses a game's trophies where it has them and its rarity spread everywhere else; Rarity always shows the rarity spread.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">Category completion badge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadge">カテゴリー完全クリアバッジ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryCompletionBadgeMode_First">先頭</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn">Category column</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryColumn_Subcategory">サブカテゴリー</sys:String>
@@ -1097,7 +1097,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">表示設定をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Revert Display tab options, grid visibility, column layouts, row sizing, and overview layout to defaults.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">スキャンとハッシュ照合</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">完全クリアゲームに完全クリア状態を設定する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">レア度バーを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealWhen">表示条件</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Spoilers">ネタバレ</sys:String>
@@ -1231,7 +1231,7 @@
     <sys:String x:Key="LOCPlayAch_Filter_SinceDate">開始 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_UntilDate">終了 {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">表示/非表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">全解除実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">フルコン実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Started">Started</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Not Started</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
@@ -1323,7 +1323,7 @@
     <sys:String x:Key="LOCPlayAch_Tagging_NotCustomized">未カスタマイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Area_Trophies">トロフィー</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Area_Notes">メモ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Area_Capstones">全解除実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Area_Capstones">フルコン実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Area_Goals">目標実績</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Area_Source">ソース</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Area_Notifications">通知</sys:String>
@@ -1356,10 +1356,10 @@
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataTags">メタデータタグ</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomTags">カスタムタグ</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoTags">タグなし</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformCapstones">プラットフォーム全解除実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataCapstones">メタデータ全解除実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCapstones">カスタム全解除実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoCapstones">全解除実績なし</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_PlatformCapstones">プラットフォームフルコン実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_MetadataCapstones">メタデータフルコン実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomCapstones">カスタムフルコン実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoCapstones">フルコン実績なし</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomNotes">カスタムメモ</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_NoNotes">メモなし</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Tag_CustomOrder">カスタム順序</sys:String>
@@ -1408,11 +1408,11 @@
     <!-- Toast_AchievementProgress: heading of the incremental-progress toast for a locked achievement -->
     <sys:String x:Key="LOCPlayAch_Toast_AchievementProgress">実績の進捗状況</sys:String>
     <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
-    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} 解除しました</sys:String>
     <!-- Toast_Congratulations: heading of the game-completion toast for the current user -->
     <sys:String x:Key="LOCPlayAch_Toast_Congratulations">おめでとうございます!</sys:String>
     <!-- Toast_GameComplete: title of the game-completion toast and the completion line on framed screenshots -->
-    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">ゲーム完全クリア!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_GameComplete">ゲームを完全クリアしました!</sys:String>
     <!-- Toast_CompletedTheGame: suffix of a friend's game-completion heading; the template
          composes it as "<friend name> completed the game!" -->
     <sys:String x:Key="LOCPlayAch_Toast_CompletedTheGame">ゲームを完全クリアしました!</sys:String>
@@ -1568,7 +1568,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_GameMosaicSource_FinishNext">Finish next</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion">Hunt for</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_Easiest">Easiest to get</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_ClosestToCompletion">Closest to completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_UnlockNextCriterion_ClosestToCompletion">まもなく完全クリア</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_LastPlayedWindow">Played within</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_MaxPerGame">Most per game</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_IncludeHiddenAchievements">隠し実績を含める</sys:String>
@@ -1708,7 +1708,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_After">After</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_ShowUnchanged">Show unchanged achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_PackageOnly">This game is not in your library, so the package contents are shown without a comparison.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">アイコン: {0} · オーバーライド: {1} · カテゴリー: {2} · 全解除実績: {3} · カスタム実績: {4}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Preview_Summary">アイコン: {0} · オーバーライド: {1} · カテゴリー: {2} · フルコン実績: {3} · カスタム実績: {4}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_KeptEdits">編集内容は保持されます: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">and {0} more</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">Rendering preview...</sys:String>
