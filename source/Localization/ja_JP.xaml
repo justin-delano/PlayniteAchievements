@@ -67,7 +67,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_MonthsAgo">{0}ヶ月前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 年前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} 年前</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Validation_NonNegativeInteger">Enter a whole number of 0 or more, or leave blank.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Validation_NonNegativeInteger">0 以上の整数を入力するか、空欄のままにしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">有効な日付を入力するか、空欄のままにしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_DateRangeOrder">The start date must be on or before the end date.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidId">Enter a valid {0}, such as {1}.</sys:String>
@@ -106,7 +106,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">レベルとランク</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">収集スコアと名声スコアに応じてランクとレベルが上昇します。最初のランクはブロンズ Vから始まり、ブロンズ IVと続き、シルバー、ゴールド、プラチナを経て、マスター Iまで続きます。10 レベル獲得するごとに次のランクへ昇格します。レベル 250 に達するとマスタリーを獲得し、ランクはブロンズ Vへと戻りますが、レベルと累計スコアはそのままカウントされます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PlatformBody">Points cards add up each platform's own points: Gamerscore (Xbox and Xenia games), Epic XP, RetroAchievements Points (hardcore unlocks), PlayStation Points (PSN, RPCS3, ShadPS4 and Vita3K games) and one card for each other platform. Each card shows the points earned out of the points its games hold, with no tiers or levels. Manage Achievements can send a game's points to another card.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_CardHint">Click for score system info</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CardHint">クリックしてスコアシステムの詳細を表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tier_Master">マスター</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">不明なゲーム</sys:String>
@@ -223,7 +223,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Recordings">録画</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">キャプチャ</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CategoryArt">カテゴリーアート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">Use for Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UseForGameSummaries">ゲームに使用</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -336,9 +336,9 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_PathSeparatorNotAllowed">カテゴリー名に &quot;::&quot; を含めることはできません。カテゴリーを別のカテゴリーのサブカテゴリーにするには、矢印ボタンまたは右クリックメニューを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_ManageHint">カテゴリー名の変更やカテゴリー画像の選択、ドラッグによる並べ替えが行なえます。別のカテゴリーの中央にドロップするとサブカテゴリーになり、行を右クリックするとその他の操作が表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">次のカテゴリーに統合</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">Merge this category into another, moving its achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">このカテゴリーを別のカテゴリーに統合し、含まれる実績を移動します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新しいカテゴリー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">Use this category's art as this game's image in game grids. Click again to clear.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">このカテゴリーのアートを、ゲームグリッド上のこのゲームの画像として使用します。もう一度クリックすると消去されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">本編</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ課題</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集アイテム</sys:String>
@@ -381,7 +381,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderEditorTitle">カスタムプラットフォーム</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderDeleteConfirm">Delete &quot;{0}&quot;? {1} other game(s) use this platform and will show as Custom.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderHint">このプラットフォームへの変更は、割り当てられているすべてのゲームに適用されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">Enter a valid color such as #FF652C.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderInvalidColor">#FF652C のような有効な色を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderNewName">新しいプラットフォーム</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgInvalid">このファイルを SVG 画像として読み込むことができませんでした。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Custom_ProviderSvgNoShapes">この SVG ファイル内に描画可能な図形が見つかりませんでした。</sys:String>
@@ -409,7 +409,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_CustomizeCaptures">このゲームのキャプチャを個別に設定する</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_StopSeparateConfirm">Stop setting this game separately? It follows the shared settings again.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_CaptureFolder">キャプチャフォルダ</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_CaptureFolderHint">This game's screenshots and clips are saved straight into this folder. Leave it blank to use the shared folders.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notifications_CaptureFolderHint">このゲームのスクリーンショットとクリップは、このフォルダに直接保存されます。共有フォルダを使用する場合は空欄のままにしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataButton">カスタムデータを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataConfirm">&quot;{0}&quot; のすべてのカスタムデータを消去しますか?
 
@@ -674,8 +674,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">フレンドの解除通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableProgressToasts">実績の進捗状況通知を表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SkipCompletionAfterCapstone">Skip the 100% notification when a capstone completes the game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent">Notify every (%):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">For example, 10 notifies at 10%, 20%, 30% and so on. 0 notifies on every update.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent">通知間隔 (%):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressToastIntervalPercent_Hint">例: 10 を指定すると 10%、20%、30%... のタイミングで通知されます。0 を指定すると更新のたびに通知されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Fallback Interval (seconds):</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollRefreshFriends">Also Refresh Friends Who Own the Running Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Friend Refresh Every N Polls:</sys:String>
@@ -702,7 +702,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_NotificationRenderMode_Hint">「品質」では、ゲーム側で GPU の負荷が高い状態でも通知を滑らかに表示できますが、通知の表示中はゲームのフレームレートがわずかに低下する場合があります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowHeader">ヘッダー行</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityGlow">レア度発光</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastRarityColoredName">Rarity-colored name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastRarityColoredName">レア度に応じて名前を着色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowGameName">ゲーム名</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastBehavior">動作</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">解除スクリーンショット</sys:String>
@@ -779,7 +779,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_TextShadowOffset">オフセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_FontThemeDefault">テーマデフォルト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTexts">ヘッダーテキスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">Leave blank to use the localized default. {0} is the friend's name, or the game's name in the Game Complete! title.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderTextsHint">ローカライズされたデフォルトを使用する場合は空欄のままにしてください。{0} にはフレンド名、またはゲーム完全クリア! タイトルのゲーム名が挿入されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendUnlock">Friend unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderCongratulations">100% 完全クリア率</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_HeaderFriendCompleted">フレンドがゲームを完全クリアしました</sys:String>
@@ -1137,13 +1137,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_AnimateRarityGlows_Help">解除済み実績アイコンと解除通知のレア度発光エフェクトを緩やかにフェードイン・アウトさせ、光線をゆっくりと回転させます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RarityGlowPulseMinOpacity">最小発光</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RarityGlowPulseMaxOpacity">最大発光</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NameColor">Name Color</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_StatusColor">Status Color</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NameColor">名前の色</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatusColor">状態の色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatusColor_MissableUnobtainable">取り逃し注意と獲得不可</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">Color Rarity Text by Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">Show Name Above Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">レア度に応じてレア度テキストを着色</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">プログレスバーの上に名前を表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityBadgesBelowProgress">レア度バッジをプログレスバーの下に表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowTreeOnly">Show Tree Only</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowTreeOnly">ツリーのみを表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieIncludeLocked">Show locked slice</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
@@ -1435,7 +1435,7 @@
     <sys:String x:Key="LOCPlayAch_Captures_VideoError">This clip can't be played. Windows Media Player components may be missing.</sys:String>
     <!-- ChartCut: toggle button that trims (cuts) the unlock chart to the selected time period -->
     <sys:String x:Key="LOCPlayAch_ChartCut">切り取り</sys:String>
-    <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">Use #AARRGGBB, #RRGGBB, or a WPF color name.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ColorPicker_InvalidColor">#AARRGGBB、#RRGGBB、または WPF の色名を使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_HexLabel">16進数</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">色を選択</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">解除済みでグループ化</sys:String>
@@ -1682,10 +1682,10 @@
     <sys:String x:Key="LOCPlayAch_Workshop_BundleComposerHint">Choose what each part of the bundle is built from: your current settings or a saved preset.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_SavedAsCopy">&quot;{0}&quot; is a Workshop item, so your preset was saved as &quot;{1}&quot;.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_Hint">保存した外観とワークショップから追加したすべての項目が表示されます。設定カードから適用できます。更新時も変更した内容が保持されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_InLibrary">In library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_Applied">Applied</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_Edited">Edited</sys:String>
-    <sys:String x:Key="LOCPlayAch_Library_UsedIn">Used in</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_InLibrary">ライブラリ内</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Applied">適用済み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_Edited">編集済み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Library_UsedIn">次で使用中</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_NotApplied">Not applied anywhere.</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_Unlink">Unlink: keep everything as it is and stop taking updates from this item</sys:String>
     <sys:String x:Key="LOCPlayAch_Library_UpdatesWhenApplied">Notifications, frames and showcase pages that use it take the new version when you apply it again.</sys:String>
