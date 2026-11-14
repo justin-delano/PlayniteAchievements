@@ -43,7 +43,7 @@
     <sys:String x:Key="LOCPlayAch_Common_DateAdded">追加日</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ReleaseDate">発売日</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Locked">未解除</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Merge">Merge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Merge">統合</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">このゲームには利用可能な実績キャッシュがありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">このゲームの実績はまだトラッキングされていません。更新ボタンをクリックして実績データを確認してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">このゲームは実績に対応していないか、このプラットフォームでは実績が利用できない可能性があります。</sys:String>
@@ -68,7 +68,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 年前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} 年前</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_NonNegativeInteger">Enter a whole number of 0 or more, or leave blank.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">Enter a valid date, or leave blank.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidDateTime">有効な日付を入力するか、空欄のままにしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_DateRangeOrder">The start date must be on or before the end date.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Validation_InvalidId">Enter a valid {0}, such as {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">表示</sys:String>
