@@ -531,6 +531,7 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">ゲームが見つかりません。別の検索ワードをお試しください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} ゲームが見つかりました</sys:String>
     <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">ページリンクまたはID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameSearch_Unavailable">{0} did not answer the search. Try again in a moment.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">SuccessStory (レガシー) の手動リンクをカスタムトラッキングとしてインポートします。インポートは追加のみで、既存の実績リストやキャッシュされたプラットフォームデータを上書きすることはありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">レガシーインポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">レガシーリンクをインポート</sys:String>
