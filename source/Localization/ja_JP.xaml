@@ -232,8 +232,8 @@
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">スクリーンショット</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">録画</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">キャプチャ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">カテゴリーアート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_ReplaceGameArt">ゲームアートを置換</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">カテゴリー画像</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_ReplaceGameArt">ゲーム画像を置換</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -352,7 +352,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">次のカテゴリーに統合</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">このカテゴリーを別のカテゴリーに統合し、含まれる実績を移動します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新しいカテゴリー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">このカテゴリーのアートを、ゲームグリッド上のこのゲームの画像として使用します。もう一度クリックすると消去されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">このカテゴリーの画像を、ゲームグリッド上のこのゲームの画像として使用します。再度クリックすると消去されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">本編</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ課題</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集アイテム</sys:String>
@@ -485,7 +485,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_StartInCategoryMode">カテゴリーモードで開始</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HideCategorySummaryRow">選択後にカテゴリーグリッドを隠す</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGrid">カテゴリーグリッド</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">カテゴリーアート不足時はアイコンの代わりにカバー画像を使用</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">カテゴリー画像不足時はアイコンの代わりにカバー画像を使用</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">アイコン</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Editor">編集</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_MakeGlobal">グローバルにする</sys:String>
@@ -567,7 +567,7 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_Format_SupportedFiles">対応ファイル</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Delimiter">区切り文字</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_HasHeader">1行目をヘッダーとして扱う</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">Achievement list</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">実績リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">The part of the file with one entry per achievement, such as data.achievements. Add [*] to take every item of a list. Empty uses the whole file.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Sheet">シート</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPath">行要素パス</sys:String>
@@ -689,16 +689,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExclusionFilters_Description">選択した保存済み Playnite フィルターのいずれかに一致するゲームは自動的に除外され、一致しなくなると再び対象に含まれます。手動で対象または除外を設定したゲームは、その設定が優先されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">棒グラフ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">ボタン</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Description">すべてのゲームの実績データを削除します。1件のゲームのみを消去する場合は、そのゲームのメンテナンスメニューを使用してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Description">すべてのゲームの実績データを削除します。個別に消去する場合は、対象のゲームのメンテナンスメニューを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Title">実績データ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">検出されたゲームのうち、フレンドだけが所有するゲームのデータとその画像キャッシュを削除します。共通して所有するゲームのデータは保持されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Title">Clear Unowned Friend Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Title">未所有のフレンドゲームを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">コンパクトリスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">コンパクト未解除リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">コンパクト解除済みリスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">実績アイコンキャッシュを圧縮します。通常、これが最も大きいグループです。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIcons">Achievement Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">提供元から読み込んだデフォルトカテゴリーアートを圧縮します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIcons">実績アイコン</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">提供元から読み込んだデフォルトカテゴリー画像を圧縮します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">画像キャッシュ {1} 件中 {0} 件が {2} px を超えています。
 
 現在のサイズ: {3}
@@ -706,11 +706,11 @@
 
 ファイルは直接上書きされ、この操作は元に戻せません。続行しますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">自分で設定したアイコンやカテゴリー画像を圧縮します。更新しても元の画質には戻りません。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomImages">Your Own Images</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomImages">自分の画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">大きすぎる画像キャッシュを縮小してディスク領域を解放します。選択したサイズ以下の画像は変更されず、圧縮は元に戻せません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">フレンドのアバターや未所有ゲームの画像を圧縮します。これらのデータの多くは既に非常に小さいサイズになっています。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImages">Friend Images</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">Maximum Image Size</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImages">フレンド画像</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">最大画像サイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">{0} px を超える画像キャッシュは見つかりませんでした。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">画像キャッシュを圧縮中... ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">画像キャッシュをスキャン中... ({0}/{1})</sys:String>
@@ -859,7 +859,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">背景画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">通知の背面に表示される画像です。アニメーション形式は再生されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BlurBackground">ぼかし背景</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_PreviewBackdrop">ゲームアート上でプレビュー</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_PreviewBackdrop">ゲーム画像上でプレビュー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImages">バッジ画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">レア度とクリアバッジを置き換えます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">解除録画</sys:String>
@@ -968,7 +968,7 @@
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">デバッグ用にデータベーステーブルを CSV にエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase_Title">Export Database</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase_Title">データベースをエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、未解除または隠し実績のアイコンが表示されるまで変わりに表示されます。画像リンクやファイルをドラッグ&amp;ドロップするか、参照して選択してください。消去を押すと組み込み画像に戻ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">ファイルスキャンキャッシュを再構築する</sys:String>
@@ -976,8 +976,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">未解除または隠し実績で表示する詳細情報を選択します。チェックを外した項目は隠され、実績をクリックすると表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">更新間隔 (時間):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAll">Clear All Icons</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLocked">Clear Locked Icons</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAll">すべてのアイコンを消去</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLocked">すべての未解除アイコンを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">個別の未解除アイコンのみを削除します。次回更新時に復元されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">キャッシュされたアイコンファイルを消去します。不足したアイコンは次回更新時に再度ダウンロードされます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">アイコン</sys:String>
@@ -996,7 +996,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">メンテナンス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">拡張機能のデータフォルダを開く (ログとキャッシュが含まれます)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">フォルダを開く</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder_Title">Open Data Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder_Title">データフォルダを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">ピクセル (空欄 = 無制限)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">行の高さ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">最大行数</sys:String>
@@ -1030,13 +1030,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">セルに合わせて拡大</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">元のサイズまで拡大</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Help">実績アイコン、カテゴリーおよびゲーム列など、幅を変更できるグリッド列内での画像サイズの調整方法を設定します。&quot;セルに合わせて拡大&quot;はセルいっぱいに画像を拡大し、&quot;元のサイズまで拡大&quot;は画像本来のピクセルサイズを超えない範囲で拡大します。どちらの設定でも、列幅が狭い場合は列に合わせて縮小されます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">Corner radius (px)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius_Help">How rounded the corners are on the art turned on above. Each image caps it at half its shorter side, so a large value makes small art round.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">Game art corner rounding</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners_Help">Rounds the corners of game covers, game icons and category art.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">Achievement icon corner rounding</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">Layout corner rounding</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners_Help">Rounds the corners of text boxes, dropdowns, buttons, cards and menus.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">角丸 (px)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius_Help">上記で有効にした項目に適用される角の丸みを設定します。各画像の短辺の半分が上限となるため、大きな値を指定すると小さな画像は円形になります。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">ゲーム画像の角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners_Help">ゲームのカバー画像、アイコンおよびカテゴリー画像の角を丸くします。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">実績アイコンの角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">レイアウトの角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners_Help">テキストボックス、ドロップダウン、ボタンおよびカードとメニューの角を丸くします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">ピクセル (空欄 = 無制限)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">行 (空欄 = 無制限)</sys:String>
 
@@ -1181,7 +1181,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllFeatures">すべての特徴を削除</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">次回に概要を開いたときに初回セットアップ画面を再表示します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">初回セットアップ画面をリセット</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup_Title">Show First-Time Setup Again</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup_Title">初回セットアップ画面を再表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">表示設定をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">表示タブのオプション、グリッドの表示設定、列のレイアウト、行のサイズおよび概要のレイアウトをデフォルトに戻します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">スキャンとハッシュ照合</sys:String>
@@ -1807,7 +1807,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">他 {0} 件</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">プレビューを描画中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">カバー画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">任意、ゲームのバナーアートなど</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">任意、ゲームのバナー画像など</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">カバー画像は 5MB 以下である必要があります。</sys:String>
     <!-- Labels of a Workshop item's contents summary, each followed by its count. -->
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">カスタム実績</sys:String>
