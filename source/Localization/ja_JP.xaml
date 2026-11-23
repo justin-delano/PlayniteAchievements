@@ -594,12 +594,12 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_CellUnreadable">この値を {0} として読み込むことはできません。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoColumns">列を実績フィールドにマッピングしてください。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoMatch">Choose how rows are matched to achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy">Match rows by</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy">次の項目で行を照合</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_MatchedBy">{0} of {1} achievements matched</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromOne">Position, from 1</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromZero">Position, from 0</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_RowOrder">Row order</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_DetailsCustomOnly">Names, descriptions and other details apply to custom achievements only.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_DetailsCustomOnly">名前、説明およびその他の詳細はカスタム実績にのみ適用されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CreateNeedsName">実績を作成にするには API 名または実績名にマッピングされた列が必要です。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CustomTimeFormat">カスタム時刻形式を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_ApplyReportTitle">リンクしたファイルが適用されました。</sys:String>
