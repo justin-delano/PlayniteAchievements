@@ -284,7 +284,7 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Menu_AchievementEditor">Achievement Editor</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_AchievementEditor">実績エディタ</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">Playnite マッピングを変更</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">Playnite マッピングを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">Playnite ゲームにマッピング</sys:String>
@@ -495,7 +495,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_Empty">このゲームにはまだタグがありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_FetchedHint">このゲームの実績データから取得された項目です。名前の変更や色の変更は可能ですが、削除はできません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Goal">目標実績</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_SingleGameOnly">Pick one game in the Game filter to change this.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_SingleGameOnly">変更するにはゲームフィルターでゲームを選択してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Revert">復元</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertHint">選択した実績への変更を破棄し、提供元の値を再表示します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertConfirmSingle">&quot;{0}&quot; を提供元の値に戻しますか?</sys:String>
@@ -531,7 +531,7 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">ゲームが見つかりません。別の検索ワードをお試しください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} ゲームが見つかりました</sys:String>
     <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">ページリンクまたはID</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameSearch_Unavailable">{0} did not answer the search. Try again in a moment.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameSearch_Unavailable">{0} から検索の応答がありませんでした。しばらくしてからもう一度お試しください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">SuccessStory (レガシー) の手動リンクをカスタムトラッキングとしてインポートします。インポートは追加のみで、既存の実績リストやキャッシュされたプラットフォームデータを上書きすることはありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">レガシーインポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">レガシーリンクをインポート</sys:String>
@@ -568,7 +568,7 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_Delimiter">区切り文字</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_HasHeader">1行目をヘッダーとして扱う</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">実績リスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">The part of the file with one entry per achievement, such as data.achievements. Add [*] to take every item of a list. Empty uses the whole file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">実績 1 件ごとのデータが含まれるファイル内の箇所 (例: data.achievements) を指定します。リストの全項目を取得するには [*] を指定します。空欄の場合はファイル全体を使用します。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Sheet">シート</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPath">行要素パス</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPathHint">1行として扱う要素 (例: achievements.achievement) を指定します。空欄の場合はルート要素の子要素を使用します。</sys:String>
@@ -593,12 +593,12 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_Count_Errors">{0} 読み取り不可行</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_CellUnreadable">この値を {0} として読み込むことはできません。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoColumns">列を実績フィールドにマッピングしてください。</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoMatch">Choose how rows are matched to achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoMatch">行を実績と照合する方法を選択します。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy">次の項目で行を照合</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchedBy">{0} of {1} achievements matched</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromOne">Position, from 1</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromZero">Position, from 0</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_RowOrder">Row order</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchedBy">{0} / {1} 個の実績が一致</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromOne">位置 (1から)</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromZero">位置 (0から)</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_RowOrder">元の順序</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_DetailsCustomOnly">名前、説明およびその他の詳細はカスタム実績にのみ適用されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CreateNeedsName">実績を作成にするには API 名または実績名にマッピングされた列が必要です。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CustomTimeFormat">カスタム時刻形式を入力してください。</sys:String>
@@ -1266,7 +1266,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">テキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">セカンダリテキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">ミュートテキスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">Input background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">入力背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Panel">パネル背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">ウィンドウ背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">グリッド背景</sys:String>
