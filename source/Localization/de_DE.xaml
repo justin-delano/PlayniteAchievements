@@ -129,7 +129,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Category">Kategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Clear">Entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Close">Schließen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_CollapseAll">Alle reduzieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_CollapseAll">Reduzieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Columns">Spalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_CompletionStatus">Vollendungsstatus</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Configure">Konfigurieren</sys:String>
@@ -143,7 +143,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Right">Rechts</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Top">Oben</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Enabled">Aktiviert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ExpandAll">Alle erweitern</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ExpandAll">Erweitern</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddToFavorites">Zu Favoriten hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Description">Beschreibung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Details">Details</sys:String>
