@@ -284,6 +284,7 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Menu_AchievementEditor">Achievement Editor</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">Change Playnite Mapping</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">Clear Playnite Mapping</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">Map to Playnite Game</sys:String>
@@ -496,6 +497,7 @@ Custom tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_Empty">No tags for this game yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_FetchedHint">From this game's achievement data: it can be renamed and recolored, but not deleted.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Goal">Goal</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_SingleGameOnly">Pick one game in the Game filter to change this.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Revert">Revert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertHint">Discard your changes to the selected achievements and show the provider's values again.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertConfirmSingle">Revert &quot;{0}&quot; to the provider's values?</sys:String>
@@ -531,6 +533,7 @@ Custom tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">No games found. Try a different search term.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">Found {0} game(s)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">Page link or ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameSearch_Unavailable">{0} did not answer the search. Try again in a moment.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Import SuccessStory (Legacy) manual links as custom tracking. Import is add-only and never overwrites existing achievement lists or cached platform data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Legacy Import</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Import Legacy Links</sys:String>
@@ -566,8 +569,8 @@ Custom tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_LinkedFile_Format_SupportedFiles">Supported files</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Delimiter">Delimiter</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_HasHeader">First row is a header</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">Rows path</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">Where the rows are, such as data.achievements. Add [*] to take every item of a list. Empty uses the whole file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">Achievement list</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">The part of the file with one entry per achievement, such as data.achievements. Add [*] to take every item of a list. Empty uses the whole file.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Sheet">Sheet</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPath">Row element path</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPathHint">The element that is one row, such as achievements.achievement. Empty uses the root's children.</sys:String>
@@ -592,6 +595,13 @@ Custom tracking can replace this game's cached achievement data from {0}.</sys:S
     <sys:String x:Key="LOCPlayAch_LinkedFile_Count_Errors">{0} unreadable rows</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_CellUnreadable">This value cannot be read as {0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoColumns">Map a column to an achievement field.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoMatch">Choose how rows are matched to achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy">Match rows by</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchedBy">{0} of {1} achievements matched</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromOne">Position, from 1</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromZero">Position, from 0</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_RowOrder">Row order</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_DetailsCustomOnly">Names, descriptions and other details apply to custom achievements only.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CreateNeedsName">Creating achievements needs a column mapped to API Name or Name.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CustomTimeFormat">Enter a custom time format.</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_ApplyReportTitle">The linked file was applied.</sys:String>
@@ -653,9 +663,7 @@ The mapping is removed from this game. Saved mappings and recorded unlocks are k
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentication required. Refresh canceled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Canceled">Refresh canceled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Failed">Error: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} of {1} ({2} unlocked) from {3} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Loading achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Run a refresh to load your games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Refresh complete.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Some platforms require authentication.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} friends refresh complete: {1} friend game checks refreshed</sys:String>
@@ -665,7 +673,6 @@ The mapping is removed from this game. Saved mappings and recorded unlocks are k
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starting...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Succeeded</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements {1}: {0}</sys:String>
 
@@ -687,10 +694,12 @@ The mapping is removed from this game. Saved mappings and recorded unlocks are k
     <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Description">Clear achievement data for every game. To clear one game, use its Maintenance menu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Title">Achievement Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">Remove os jogos descobertos de amigos que não possuem e suas imagens armazenadas em cache. Os dados de amigos que possuem ou compartilharam jogos são mantidos.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Title">Clear Unowned Friend Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Lista compacta</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Lista compacta de bloqueadas</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Lista compacta de desbloqueadas</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">Comprime os ícones de conquistas armazenados em cache. Normalmente, este é o maior grupo.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIcons">Achievement Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">Comprime a arte padrão de categoria fornecida pelos provedores.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">{0} de {1} imagens armazenadas em cache são maiores que {2} px.
 
@@ -699,9 +708,11 @@ Estimativa após a compressão: {4}
 
 Os arquivos serão reescritos no local e isso não pode ser desfeito. Continuar?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">Comprima suas próprias imagens de ícones e categorias. Uma atualização não poderá restaurá-las.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomImages">Your Own Images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">Reduz o tamanho das imagens armazenadas em cache para liberar espaço em disco. Imagens que já estão no tamanho selecionado ou abaixo dele permanecem inalteradas, e a compressão não pode ser desfeita.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">Compress friend avatars and unowned game images. Most of these are already small.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">Tamanho máximo da imagem:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImages">Friend Images</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">Maximum Image Size</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">Nenhuma imagem armazenada em cache é maior que {0} px.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">Comprimindo imagens armazenadas em cache… ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">Verificando imagens armazenadas em cache… ({0}/{1})</sys:String>
@@ -934,14 +945,12 @@ Espaço recuperado: {1}.</sys:String>
 
     <!-- Provider: Game Jolt -->
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">Log in to Game Jolt in the browser window to read your unlocked trophies. Game Jolt achievements are only tracked for games added by the Game Jolt Library extension, or for games given a manual Game Jolt game ID in Manage Achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">Note: Only your own unlocked trophies are read; Game Jolt does not expose achievements without signing in.</sys:String>
 
     <!-- Provider: Meta Quest -->
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Help">Log in to Meta in the browser window to read your unlocked achievements. Meta Quest achievements are tracked for games added by the Meta Quest/Oculus Library extension, or for games given a manual Meta app ID in Manage Achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Note">Observação: a Meta registra o dia em que uma conquista foi desbloqueada, mas não o horário, e não publica taxas de conclusão; por isso, as conquistas do Meta Quest não exibem horário de desbloqueio nem raridade.</sys:String>
 
     <!-- Provider: Exophase -->
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and choose achievement lists from Exophase.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on checked platforms use Exophase instead of native support. Include games on other platforms individually in Manage Achievements.</sys:String>
@@ -963,6 +972,7 @@ Espaço recuperado: {1}.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase_Title">Export Database</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">Cover Images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">These images cover a locked or hidden icon until it is revealed. Drag in an image link or file, or browse for one; Clear restores the built-in image.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Rebuild File Scan Cache</sys:String>
@@ -970,7 +980,8 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Achievement Visibility</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Choose which details a locked or hidden achievement gives away. Untick a box to cover that detail until you click the achievement to reveal it.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Horas entre atualizações:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Clear every cached icon file.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAll">Clear All Icons</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLocked">Clear Locked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">Clear only separate locked icons. The next refresh restores them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">Clear cached icon files. Missing icons are downloaded again on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">icon</sys:String>
@@ -989,6 +1000,7 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Maintenance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Open extension data folder (contains logs and cache)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Open Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder_Title">Open Data Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
@@ -1022,6 +1034,13 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">Stretch to fill</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">Up to own size</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Help">How art sizes in resizable grid columns, such as the achievement icon, category and game columns, the Overview game list and the Manage Achievements editor. Stretch to fill grows art to fill the cell; Up to own size grows it no larger than its own pixel size. Both shrink art to fit a narrower column.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">Corner radius (px)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius_Help">How rounded the corners are on the art turned on above. Each image caps it at half its shorter side, so a large value makes small art round.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">Game art corner rounding</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners_Help">Rounds the corners of game covers, game icons and category art.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">Achievement icon corner rounding</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">Layout corner rounding</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners_Help">Rounds the corners of text boxes, dropdowns, buttons, cards and menus.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
 
@@ -1029,7 +1048,6 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This platform is disabled. Enable it to track achievements.</sys:String>
@@ -1061,7 +1079,6 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Persona">Profile name</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Nickname">Nickname</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_PersonaAndNickname">Profile name (nickname)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Ignore friends to skip them during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">Use Data for Azeroth for WoW Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help">Fills global rarity percentages from the Data for Azeroth website while keeping native achievement data.</sys:String>
@@ -1168,6 +1185,7 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllFeatures">Remove All Features</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Mostrar novamente a página inicial da configuração na próxima abertura da visão geral.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup_Title">Show First-Time Setup Again</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">Reset Display Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Reverter as opções da aba Exibição, a visibilidade da grade, os layouts de colunas, o tamanho das linhas e o layout da visão geral para os padrões.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
@@ -1238,8 +1256,6 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use Cover Images Instead of Icons in Games List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
     <!-- Context_Preview / Context_Settings: uppercase panel labels above theme preview and settings columns -->
-    <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">PREVIEW</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">SETTINGS</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Styles</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">Predefinição {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
@@ -1254,7 +1270,7 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">Text</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">Secondary text</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">Muted text</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">Content background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">Input background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Panel">Panel background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">Window background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">Grid background</sys:String>
@@ -1317,7 +1333,6 @@ Espaço recuperado: {1}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Jogos</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incompletos</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">Nenhum jogo selecionado na visão geral.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Visão geral dos amigos</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Amigos</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Pesquisar amigos</sys:String>
@@ -1683,7 +1698,7 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">Completions</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">Desbloqueios / dia ativo</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">Taxa de 30 dias</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average global unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CurrentStreak">Current streak</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_LongestStreak">Longest streak</sys:String>
 
@@ -1709,6 +1724,63 @@ Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">Activity Calendar</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Image">Image</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Text">Text</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendUnlocks">Friend Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendLeaderboard">Friend Leaderboard</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendGames">Friend Games</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- Year in Review: story slides recapping one calendar year of unlocks -->
+    <!-- ================================================================= -->
+    <!-- DayStreak, DaysApart, UnlockedFirst, UnlockedBeforeFriend and FriendUnlockedFirst are captions shown under a large number. -->
+    <sys:String x:Key="LOCPlayAch_YearReview_Title">Year in Review</sys:String>
+    <!-- YearReview_DateRange: {0} is the start date, {1} is the end date -->
+    <sys:String x:Key="LOCPlayAch_YearReview_DateRange">{0} to {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_ClickToStart">Click anywhere to start</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_AchievementsUnlocked">Achievements unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_SaveCard">Save card</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesWithUnlocks">Games with unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_ByMonth">Month by month</sys:String>
+    <!-- YearReview_BusiestDay: {0} is a date and its count or score -->
+    <sys:String x:Key="LOCPlayAch_YearReview_BusiestDay">Busiest day: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_DayStreak">day streak</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_EveryDay">Every day</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGames">Top games</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesCompleted">Games completed</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestUnlock">Rarest unlock</sys:String>
+    <!-- YearReview_RarestDetail: {0} is a game name, {1} is a date, {2} is a percentage -->
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestDetail">{0}, unlocked {1}. Earned by {2} of players.</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksByRarity">Unlocks by rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksInTotal">{0} unlocks in total</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksByPlatform">Unlocks by platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_FirstAndLatest">First and latest unlock</sys:String>
+    <!-- YearReview_FirstUnlockOfYear: {0} is a year -->
+    <sys:String x:Key="LOCPlayAch_YearReview_FirstUnlockOfYear">First unlock of {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_LatestUnlock">Latest unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_DaysApart">days apart</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlockedFirst">achievements you unlocked before a friend did</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesInCommon">{0} games in common this year</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_SaveImage">Save image</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGame">Top game</sys:String>
+    <!-- YearReview_NoUnlocks: {0} is a year -->
+    <sys:String x:Key="LOCPlayAch_YearReview_NoUnlocks">No unlocks in {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Previous">Previous</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_Year">Year</sys:String>
+    <!-- YearReview_PngImage: file type name in the save dialog -->
+    <sys:String x:Key="LOCPlayAch_YearReview_PngImage">PNG image</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_Rarest">Rarest</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopFiveRarest">Top 5 rarest</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestPerPlatform">Rarest per platform</sys:String>
+    <!-- YearReview_UnlockedBeforeFriend, YearReview_FriendUnlockedFirst: {0} is a friend's name -->
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlockedBeforeFriend">achievements you unlocked before {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_FriendUnlockedFirst">achievements {0} unlocked before you</sys:String>
+    <!-- YearReview_MetricInGame: {0} is a measure such as Unlocks or Collection Score, {1} is a game name. YearReview_AverageRateInGame: {0} is a game name -->
+    <sys:String x:Key="LOCPlayAch_YearReview_MetricInGame">{0} in {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_AverageRateInGame">average unlock rate in {0}</sys:String>
+    <!-- YearReview_CardClassic, CardPoster, CardBanner: styles of the shareable card -->
+    <sys:String x:Key="LOCPlayAch_YearReview_ShowInOverview">Show in Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardClassic">Classic</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardPoster">Poster</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardBanner">Banner</sys:String>
 
     <!-- ================================================================= -->
     <!-- 19 Workshop -->

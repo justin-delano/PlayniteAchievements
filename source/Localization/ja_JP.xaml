@@ -232,8 +232,8 @@
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">スクリーンショット</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">録画</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Captures">キャプチャ</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">カテゴリーアート</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_ReplaceGameArt">ゲームアートを置換</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">カテゴリー画像</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_ReplaceGameArt">ゲーム画像を置換</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -284,6 +284,7 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Menu_AchievementEditor">実績エディタ</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ChangePlayniteMapping">Playnite マッピングを変更</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearPlayniteMapping">Playnite マッピングを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_MapToPlayniteGame">Playnite ゲームにマッピング</sys:String>
@@ -351,7 +352,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeDialog_Target">次のカテゴリーに統合</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_MergeTooltip">このカテゴリーを別のカテゴリーに統合し、含まれる実績を移動します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_NewCategoryName">新しいカテゴリー</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">このカテゴリーのアートを、ゲームグリッド上のこのゲームの画像として使用します。もう一度クリックすると消去されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip">このカテゴリーの画像を、ゲームグリッド上のこのゲームの画像として使用します。再度クリックすると消去されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_CategoryKind_Base">本編</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Challenge">チャレンジ課題</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementTag_Collectable">収集アイテム</sys:String>
@@ -484,7 +485,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_StartInCategoryMode">カテゴリーモードで開始</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HideCategorySummaryRow">選択後にカテゴリーグリッドを隠す</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGrid">カテゴリーグリッド</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">カテゴリーアート不足時はアイコンの代わりにカバー画像を使用</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">カテゴリー画像不足時はアイコンの代わりにカバー画像を使用</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">アイコン</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Editor">編集</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_MakeGlobal">グローバルにする</sys:String>
@@ -494,6 +495,7 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_Empty">このゲームにはまだタグがありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tags_FetchedHint">このゲームの実績データから取得された項目です。名前の変更や色の変更は可能ですが、削除はできません。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Goal">目標実績</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_SingleGameOnly">変更するにはゲームフィルターでゲームを選択してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_Revert">復元</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertHint">選択した実績への変更を破棄し、提供元の値を再表示します。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Editor_RevertConfirmSingle">&quot;{0}&quot; を提供元の値に戻しますか?</sys:String>
@@ -529,6 +531,7 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">ゲームが見つかりません。別の検索ワードをお試しください。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} ゲームが見つかりました</sys:String>
     <sys:String x:Key="LOCPlayAch_GameSearch_LinkOrId">ページリンクまたはID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameSearch_Unavailable">{0} から検索の応答がありませんでした。しばらくしてからもう一度お試しください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">SuccessStory (レガシー) の手動リンクをカスタムトラッキングとしてインポートします。インポートは追加のみで、既存の実績リストやキャッシュされたプラットフォームデータを上書きすることはありません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">レガシーインポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">レガシーリンクをインポート</sys:String>
@@ -564,8 +567,8 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_Format_SupportedFiles">対応ファイル</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Delimiter">区切り文字</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_HasHeader">1行目をヘッダーとして扱う</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">行パス</sys:String>
-    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">データが格納されている行 (例: data.achievements) を指定します。リストのすべての項目を取得するには [*] を追加します。空欄の場合はファイル全体を使用します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPath">実績リスト</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_RootPathHint">実績 1 件ごとのデータが含まれるファイル内の箇所 (例: data.achievements) を指定します。リストの全項目を取得するには [*] を指定します。空欄の場合はファイル全体を使用します。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Sheet">シート</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPath">行要素パス</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_RowElementPathHint">1行として扱う要素 (例: achievements.achievement) を指定します。空欄の場合はルート要素の子要素を使用します。</sys:String>
@@ -590,6 +593,13 @@
     <sys:String x:Key="LOCPlayAch_LinkedFile_Count_Errors">{0} 読み取り不可行</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_CellUnreadable">この値を {0} として読み込むことはできません。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoColumns">列を実績フィールドにマッピングしてください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_NoMatch">行を実績と照合する方法を選択します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy">次の項目で行を照合</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchedBy">{0} / {1} 個の実績が一致</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromOne">位置 (1から)</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_PositionFromZero">位置 (0から)</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_MatchBy_RowOrder">元の順序</sys:String>
+    <sys:String x:Key="LOCPlayAch_LinkedFile_DetailsCustomOnly">名前、説明およびその他の詳細はカスタム実績にのみ適用されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CreateNeedsName">実績を作成にするには API 名または実績名にマッピングされた列が必要です。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_Problem_CustomTimeFormat">カスタム時刻形式を入力してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_LinkedFile_ApplyReportTitle">リンクしたファイルが適用されました。</sys:String>
@@ -651,9 +661,7 @@
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">認証が必要です。更新がキャンセルされました。</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Canceled">更新がキャンセルされました。</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Failed">エラー: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">ゲーム {3} 件から {0}/{1} 個の実績 ({2} 個解除済み)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">実績を読み込み中...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">実績キャッシュがありません。更新を実行してゲームを読み込んでください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">更新を完了しました。</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">一部のプラットフォームは認証が必要です。</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} フレンド更新完了: {1} 件のフレンドゲームを確認し更新しました</sys:String>
@@ -663,7 +671,6 @@
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">更新中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Starting">開始中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">成功</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_TotalCounts">ゲーム {2} 件から {0} 個の実績 ({1} 個解除済み)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">キャッシュを更新中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">実績を更新中 {1}: {0}</sys:String>
 
@@ -682,14 +689,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExclusionFilters_Description">選択した保存済み Playnite フィルターのいずれかに一致するゲームは自動的に除外され、一致しなくなると再び対象に含まれます。手動で対象または除外を設定したゲームは、その設定が優先されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">棒グラフ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">ボタン</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Description">すべてのゲームの実績データを削除します。1件のゲームのみを消去する場合は、そのゲームのメンテナンスメニューを使用してください。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Description">すべてのゲームの実績データを削除します。個別に消去する場合は、対象のゲームのメンテナンスメニューを使用してください。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementData_Title">実績データ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">検出されたゲームのうち、フレンドだけが所有するゲームのデータとその画像キャッシュを削除します。共通して所有するゲームのデータは保持されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Title">未所有のフレンドゲームを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">コンパクトリスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">コンパクト未解除リスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">コンパクト解除済みリスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIconsDescription">実績アイコンキャッシュを圧縮します。通常、これが最も大きいグループです。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">提供元から読み込んだデフォルトカテゴリーアートを圧縮します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_AchievementIcons">実績アイコン</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CategoryArtDescription">提供元から読み込んだデフォルトカテゴリー画像を圧縮します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Confirm">画像キャッシュ {1} 件中 {0} 件が {2} px を超えています。
 
 現在のサイズ: {3}
@@ -697,9 +706,11 @@
 
 ファイルは直接上書きされ、この操作は元に戻せません。続行しますか?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomIconsDescription">自分で設定したアイコンやカテゴリー画像を圧縮します。更新しても元の画質には戻りません。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_CustomImages">自分の画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_Description">大きすぎる画像キャッシュを縮小してディスク領域を解放します。選択したサイズ以下の画像は変更されず、圧縮は元に戻せません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImagesDescription">フレンドのアバターや未所有ゲームの画像を圧縮します。これらのデータの多くは既に非常に小さいサイズになっています。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">最大画像サイズ:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_FriendImages">フレンド画像</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompressImages_MaxSize">最大画像サイズ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_NoCandidates">{0} px を超える画像キャッシュは見つかりませんでした。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressCompressing">画像キャッシュを圧縮中... ({0}/{1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompressImages_ProgressScanning">画像キャッシュをスキャン中... ({0}/{1})</sys:String>
@@ -848,7 +859,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImage">背景画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BackgroundImageHint">通知の背面に表示される画像です。アニメーション形式は再生されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BlurBackground">ぼかし背景</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Style_PreviewBackdrop">ゲームアート上でプレビュー</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Style_PreviewBackdrop">ゲーム画像上でプレビュー</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImages">バッジ画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Style_BadgeImagesHint">レア度とクリアバッジを置き換えます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingsHeader">解除録画</sys:String>
@@ -930,14 +941,12 @@
 
     <!-- Provider: Game Jolt -->
     <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Help">解除済みのトロフィーを取得するには、ブラウザウィンドウで Game Jolt にログインしてください。Game Jolt 実績は、Game Jolt ライブラリ拡張機能で追加したゲーム、または実績の管理で Game Jolt ゲーム ID を手動で設定したゲームを対象にトラッキングされます。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameJolt_Note">注意: 自分の解除済みトロフィーのみが読み込まれます。Game Jolt はサインインしないと実績が公開されません。</sys:String>
 
     <!-- Provider: Meta Quest -->
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Help">解除済みの実績を取得するには、ブラウザウィンドウで Meta にログインしてください。Meta Quest の実績は、Meta Quest/Oculus ライブラリ拡張機能で追加したゲーム、または実績の管理で Meta アプリ ID を手動で設定したゲームを対象に追跡されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Meta_Note">注: Meta は実績を解除した日付のみを記録し、時刻は記録せず、達成率も公開していないため、Meta Quest の実績には解除時刻とレア度が表示されません。</sys:String>
 
     <!-- Provider: Exophase -->
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">有効にすると、Exophase は管理対象のプラットフォーム上のゲームの実績を自動的にトラッキングします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Exophase で認証すると、トラッキングデータの更新や Exophase からの実績リストの選択ができるようになります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">管理対象のプラットフォーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">チェックを入れたプラットフォームのゲームでは、ネイティブ対応の代わりに Exophase が使用されます。その他のプラットフォームのゲームは、実績の管理で個別に追加できます。</sys:String>
@@ -959,6 +968,7 @@
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">デバッグ用にデータベーステーブルを CSV にエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV をエクスポート</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase_Title">データベースをエクスポート</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons">カバー画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FallbackIcons_Help">これらの画像は、未解除または隠し実績のアイコンが表示されるまで変わりに表示されます。画像リンクやファイルをドラッグ&amp;ドロップするか、参照して選択してください。消去を押すと組み込み画像に戻ります。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">ファイルスキャンキャッシュを再構築する</sys:String>
@@ -966,7 +976,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">実績の表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">未解除または隠し実績で表示する詳細情報を選択します。チェックを外した項目は隠され、実績をクリックすると表示されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">更新間隔 (時間):</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">キャッシュされたすべてのアイコンファイルを削除します。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAll">すべてのアイコンを消去</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLocked">すべての未解除アイコンを消去</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearLockedDescription">個別の未解除アイコンのみを削除します。次回更新時に復元されます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_Description">キャッシュされたアイコンファイルを消去します。不足したアイコンは次回更新時に再度ダウンロードされます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_FileLabel_All">アイコン</sys:String>
@@ -985,6 +996,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">メンテナンス</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">拡張機能のデータフォルダを開く (ログとキャッシュが含まれます)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">フォルダを開く</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder_Title">データフォルダを開く</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">ピクセル (空欄 = 無制限)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">行の高さ</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">最大行数</sys:String>
@@ -1018,6 +1030,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">セルに合わせて拡大</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">元のサイズまで拡大</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Help">実績アイコン、カテゴリーおよびゲーム列など、幅を変更できるグリッド列内での画像サイズの調整方法を設定します。&quot;セルに合わせて拡大&quot;はセルいっぱいに画像を拡大し、&quot;元のサイズまで拡大&quot;は画像本来のピクセルサイズを超えない範囲で拡大します。どちらの設定でも、列幅が狭い場合は列に合わせて縮小されます。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">角丸 (px)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius_Help">上記で有効にした項目に適用される角の丸みを設定します。各画像の短辺の半分が上限となるため、大きな値を指定すると小さな画像は円形になります。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">ゲーム画像の角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners_Help">ゲームのカバー画像、アイコンおよびカテゴリー画像の角を丸くします。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">実績アイコンの角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">レイアウトの角の丸み</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners_Help">テキストボックス、ドロップダウン、ボタンおよびカードとメニューの角を丸くします。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">ピクセル (空欄 = 無制限)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">行 (空欄 = 無制限)</sys:String>
 
@@ -1025,7 +1044,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">選択ゲームグリッド</sys:String>
 
     <!-- Provider: Shared -->
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} 認証</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} は設定されていません。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} 接続</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">このプラットフォームは無効になっています。実績をトラッキングするには有効にしてください。</sys:String>
@@ -1057,7 +1075,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Persona">プロフィール名</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_Nickname">ニックネーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendNameDisplayMode_PersonaAndNickname">プロフィール名 (ニックネーム)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">無視したフレンドは更新時にスキップされます。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">フレンドリストを更新</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">WoW のレア度に Data for Azeroth を使用する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help">ネイティブの実績データを保持したまま、Data for Azeroth ウェブサイトからグローバルレア度百分率を補完します。</sys:String>
@@ -1164,6 +1181,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllFeatures">すべての特徴を削除</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">次回に概要を開いたときに初回セットアップ画面を再表示します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">初回セットアップ画面をリセット</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup_Title">初回セットアップ画面を再表示する</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">表示設定をリセット</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">表示タブのオプション、グリッドの表示設定、列のレイアウト、行のサイズおよび概要のレイアウトをデフォルトに戻します。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">スキャンとハッシュ照合</sys:String>
@@ -1234,8 +1252,6 @@
     <sys:String x:Key="LOCPlayAch_UseCoverImages">ゲームリストでアイコンの代わりにカバー画像を使用</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">項目表示</sys:String>
     <!-- Context_Preview / Context_Settings: uppercase panel labels above theme preview and settings columns -->
-    <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">プレビュー</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">外観</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">プリセット {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">バッジの色</sys:String>
@@ -1250,7 +1266,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">テキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">セカンダリテキスト</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">ミュートテキスト</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">コンテンツ背景</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">入力背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Panel">パネル背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">ウィンドウ背景</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">グリッド背景</sys:String>
@@ -1313,7 +1329,6 @@
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">最終解除記録なし</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">ゲーム</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">未クリア</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_NoGameSelected">概要でゲームが選択されていません。</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">フレンドの概要</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">フレンド</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">フレンドを検索</sys:String>
@@ -1678,7 +1693,7 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CompletedGames">クリア数</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ActiveDayRate">解除/アクティブ日</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_ThirtyDayRate">過去 30 日間のペース</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">グローバル平均解除率</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Stat_AverageGlobalUnlock">Average rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_CurrentStreak">現在の連続記録</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Stat_LongestStreak">最長の連続記録</sys:String>
 
@@ -1704,6 +1719,63 @@
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_ActivityCalendar">アクティビティカレンダー</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Image">画像</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Text">テキスト</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendUnlocks">Friend Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendLeaderboard">Friend Leaderboard</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendGames">Friend Games</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- Year in Review: story slides recapping one calendar year of unlocks -->
+    <!-- ================================================================= -->
+    <!-- DayStreak, DaysApart, UnlockedFirst, UnlockedBeforeFriend and FriendUnlockedFirst are captions shown under a large number. -->
+    <sys:String x:Key="LOCPlayAch_YearReview_Title">Year in Review</sys:String>
+    <!-- YearReview_DateRange: {0} is the start date, {1} is the end date -->
+    <sys:String x:Key="LOCPlayAch_YearReview_DateRange">{0} to {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_ClickToStart">Click anywhere to start</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_AchievementsUnlocked">Achievements unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_SaveCard">Save card</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesWithUnlocks">Games with unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_ByMonth">Month by month</sys:String>
+    <!-- YearReview_BusiestDay: {0} is a date and its count or score -->
+    <sys:String x:Key="LOCPlayAch_YearReview_BusiestDay">Busiest day: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_DayStreak">day streak</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_EveryDay">Every day</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGames">Top games</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesCompleted">Games completed</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestUnlock">Rarest unlock</sys:String>
+    <!-- YearReview_RarestDetail: {0} is a game name, {1} is a date, {2} is a percentage -->
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestDetail">{0}, unlocked {1}. Earned by {2} of players.</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksByRarity">Unlocks by rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksInTotal">{0} unlocks in total</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlocksByPlatform">Unlocks by platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_FirstAndLatest">First and latest unlock</sys:String>
+    <!-- YearReview_FirstUnlockOfYear: {0} is a year -->
+    <sys:String x:Key="LOCPlayAch_YearReview_FirstUnlockOfYear">First unlock of {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_LatestUnlock">Latest unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_DaysApart">days apart</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlockedFirst">achievements you unlocked before a friend did</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_GamesInCommon">{0} games in common this year</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_SaveImage">Save image</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGame">Top game</sys:String>
+    <!-- YearReview_NoUnlocks: {0} is a year -->
+    <sys:String x:Key="LOCPlayAch_YearReview_NoUnlocks">No unlocks in {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Previous">Previous</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_Year">Year</sys:String>
+    <!-- YearReview_PngImage: file type name in the save dialog -->
+    <sys:String x:Key="LOCPlayAch_YearReview_PngImage">PNG image</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_Rarest">Rarest</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopFiveRarest">Top 5 rarest</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_RarestPerPlatform">Rarest per platform</sys:String>
+    <!-- YearReview_UnlockedBeforeFriend, YearReview_FriendUnlockedFirst: {0} is a friend's name -->
+    <sys:String x:Key="LOCPlayAch_YearReview_UnlockedBeforeFriend">achievements you unlocked before {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_FriendUnlockedFirst">achievements {0} unlocked before you</sys:String>
+    <!-- YearReview_MetricInGame: {0} is a measure such as Unlocks or Collection Score, {1} is a game name. YearReview_AverageRateInGame: {0} is a game name -->
+    <sys:String x:Key="LOCPlayAch_YearReview_MetricInGame">{0} in {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_AverageRateInGame">average unlock rate in {0}</sys:String>
+    <!-- YearReview_CardClassic, CardPoster, CardBanner: styles of the shareable card -->
+    <sys:String x:Key="LOCPlayAch_YearReview_ShowInOverview">Show in Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardClassic">Classic</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardPoster">Poster</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardBanner">Banner</sys:String>
 
     <!-- ================================================================= -->
     <!-- 19 Workshop -->
@@ -1792,7 +1864,7 @@
     <sys:String x:Key="LOCPlayAch_Workshop_Preview_MoreRows">他 {0} 件</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_RenderingPreview">プレビューを描画中...</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_Cover">カバー画像</sys:String>
-    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">任意、ゲームのバナーアートなど</sys:String>
+    <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverHint">任意、ゲームのバナー画像など</sys:String>
     <sys:String x:Key="LOCPlayAch_Workshop_Share_CoverTooLarge">カバー画像は 5MB 以下である必要があります。</sys:String>
     <!-- Labels of a Workshop item's contents summary, each followed by its count. -->
     <sys:String x:Key="LOCPlayAch_Workshop_Contents_CustomAchievements">カスタム実績</sys:String>
