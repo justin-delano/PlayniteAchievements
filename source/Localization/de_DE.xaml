@@ -915,7 +915,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
 
     <!-- Provider: Battle.net -->
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSection">World of Warcraft</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowClassicSection">World of Warcraft Classic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowClassicSection">World of Warcraft: Classic</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRealm">Realm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Charakter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientId">Client ID</sys:String>
