@@ -909,7 +909,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Vor der Verwendung von Erfolgstastenkürzel ein Spiel auswählen oder starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Tastenkürzel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Schlagwortsynchronisation aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableFeatureSync">Enable Feature Sync</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFeatureSync">Feature-Synchronisation aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte berücksichtigen</sys:String>
     <sys:String x:Key="LOCPlayAch_InvalidPath">Ordner existiert nicht</sys:String>
 
@@ -921,7 +921,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientId">Client ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">Client Secret</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URL</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSourceAccount">Signed-in account</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSourceAccount">Angemeldeter Account</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSourceCharacter">Einzelner Charakter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowAccountCharactersHint">Achievements come from every character on the signed-in account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">Zum Abgleich von WoW-Erfolgen wird die offizielle API verwendet. Diese benötigt eine einmalige kostenlose Einrichtung eines API-Clients im Blizzard-Konto:</sys:String>
@@ -1032,12 +1032,12 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Stretch">Ausfüllen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_UpToOwnSize">Bis auf Bildgröße</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconScaleMode_Help">How art sizes in resizable grid columns, such as the achievement icon, category and game columns, the Overview game list and the Manage Achievements editor. Stretch to fill grows art to fill the cell; Up to own size grows it no larger than its own pixel size. Both shrink art to fit a narrower column.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">Corner radius (px)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius">Eckenradius (in Pixel)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CornerRoundingRadius_Help">How rounded the corners are on the art turned on above. Each image caps it at half its shorter side, so a large value makes small art round.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">Game art corner rounding</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners">Eckenabrundung bei Spielgrafiken</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundGameArtCorners_Help">Rounds the corners of game covers, game icons and category art.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">Achievement icon corner rounding</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">Layout corner rounding</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundAchievementIconCorners">Eckenabrundung bei Erfolgssymbolen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners">Eckenabrundung beim Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RoundLayoutCorners_Help">Rounds the corners of text boxes, dropdowns, buttons, cards and menus.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">Pixel (leer = automatisch)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">(leer = unbegrenzt)</sys:String>
@@ -1247,7 +1247,7 @@ Files are rewritten in place and this cannot be undone. Continue?</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatische Zuweisung von Schlagworten nach Erfolgsstatus zur besseren Filterung in der Bibliothek.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FeatureSyncDescription">Marks games with Playnite features by where their achievements come from.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FeatureSyncHeader">Feature-Synchronisierung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FeatureSyncHeader">Feature-Synchronisation</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Separate Sperrsymbole (wenn verfügbar) anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Herunterladen von Sperrsymbolen der Plattform, sofern verfügbar und unterschiedlich zum Freischaltsymbol. Ansonsten werden die Freischaltsymbole in Graustufen verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
@@ -1729,7 +1729,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_Text">Text</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendUnlocks">Friend Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendLeaderboard">Friend Leaderboard</sys:String>
-    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendGames">Friend Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Showcase_Widget_FriendGames">Freundesspiele</sys:String>
 
     <!-- ================================================================= -->
     <!-- Year in Review: story slides recapping one calendar year of unlocks -->
@@ -1747,7 +1747,7 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_BusiestDay">Busiest day: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_DayStreak">day streak</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_EveryDay">Every day</sys:String>
-    <sys:String x:Key="LOCPlayAch_YearReview_TopGames">Top games</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGames">Top-Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_GamesCompleted">Games completed</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_RarestUnlock">Rarest unlock</sys:String>
     <!-- YearReview_RarestDetail: {0} is a game name, {1} is a date, {2} is a percentage -->
@@ -1762,12 +1762,12 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_DaysApart">days apart</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_UnlockedFirst">achievements you unlocked before a friend did</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_GamesInCommon">{0} games in common this year</sys:String>
-    <sys:String x:Key="LOCPlayAch_YearReview_SaveImage">Save image</sys:String>
-    <sys:String x:Key="LOCPlayAch_YearReview_TopGame">Top game</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_SaveImage">Bild speichern</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_TopGame">Top-Spiel</sys:String>
     <!-- YearReview_NoUnlocks: {0} is a year -->
     <sys:String x:Key="LOCPlayAch_YearReview_NoUnlocks">No unlocks in {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Previous">Previous</sys:String>
-    <sys:String x:Key="LOCPlayAch_YearReview_Year">Year</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_Year">Jahr</sys:String>
     <!-- YearReview_PngImage: file type name in the save dialog -->
     <sys:String x:Key="LOCPlayAch_YearReview_PngImage">PNG image</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_Rarest">Rarest</sys:String>
@@ -1780,8 +1780,8 @@ Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_MetricInGame">{0} in {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_AverageRateInGame">average unlock rate in {0}</sys:String>
     <!-- YearReview_CardClassic, CardPoster, CardBanner: styles of the shareable card -->
-    <sys:String x:Key="LOCPlayAch_YearReview_ShowInOverview">Show in Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_YearReview_CardClassic">Classic</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_ShowInOverview">In Übersicht anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_YearReview_CardClassic">Klassisch</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_CardPoster">Poster</sys:String>
     <sys:String x:Key="LOCPlayAch_YearReview_CardBanner">Banner</sys:String>
 
