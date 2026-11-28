@@ -1230,8 +1230,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_StatusColor">状態の色</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatusColor_MissableUnobtainable">取り逃し注意と獲得不可</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorRarityTextByRarity">レア度に応じてレア度テキストを着色</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_InlineDetailBeforeName">詳細を名前の前に表示</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_InlineDetailBeforeDescription">詳細を説明の前に表示</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InlineDetailBeforeName">名前の前に詳細を表示</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InlineDetailBeforeDescription">説明の前に詳細を表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowNameAboveProgress">プログレスバーの上に名前を表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityBadgesBelowProgress">レア度バッジをプログレスバーの下に表示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTreeOnly">ツリーのみを表示</sys:String>
